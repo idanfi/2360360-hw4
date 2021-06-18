@@ -1,0 +1,7 @@
+// really dummy test
+void main() {
+   int x = 3;
+   int y;
+   "lidor";
+   return;
+}
