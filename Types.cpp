@@ -7,8 +7,9 @@
 #include <string>
 
 #include "Types.h"
-
+#include "registerAllocator.h"
 using namespace std;
+extern RegisterAllocator regAllocator;
 
 bool isNumeric(const string &type) {
     if (type == TYPE_BYTE || type == TYPE_INT)
@@ -79,4 +80,58 @@ string Node::realtype() {
         type = symbolTable.getReturnType(this->id);
     }
     return type;
+}
+
+string getLlvmType(string type) {
+    string llvmType = type;
+    if (llvmType == TYPE_VOID) {
+        transform(llvmType.begin(), llvmType.end(), llvmType.begin(), ::tolower);
+    } else {
+        llvmType = "i32";
+    }
+    return llvmType;
+}
+
+void createLlvmArguments(int numArguments, stringstream &code, vector<Node *>* expressions) {
+    code << "(";
+    for (int i = 0; i < numArguments; i++) {
+        if (i != 0) {
+            code << ", ";
+        }
+        code << "i32";
+        if (expressions) {
+            code << " " << regAllocator.getVarRegister((*expressions)[i]->id);
+        }
+    }
+    code << ")";
+}
+
+void Node::emitCallCode(Node* node) {
+    ExpList* expListNode = nullptr;
+    vector<Node *> *expressions = nullptr;
+    int size = 0;
+    if (node) {
+        expListNode = (ExpList*)node;
+        size = expListNode->size();
+        expressions = expListNode->getExpressions();
+    }
+    stringstream code;
+    string llvmType = getLlvmType(symbolTable.getReturnType(this->id));
+    code << "call " << llvmType;
+    code << " " << this->id;
+    createLlvmArguments(size, code, expressions);
+    buffer.emit(code.str());
+}
+
+void Node::emitReturnCode() {
+    stringstream code;
+    string reg;
+    code << "ret ";
+    if (this->id != INVALID_ID) {
+        reg = regAllocator.getVarRegister(this->id);
+    } else {
+        reg = this->value;
+    }
+    code << reg;
+    buffer.emit(code.str());
 }

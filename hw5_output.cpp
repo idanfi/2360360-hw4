@@ -47,6 +47,7 @@ void output::errorLex(int lineno){
 }
 
 void output::errorSyn(int lineno){
+    // todo: if missing a SC, the lineno is incorrect
     cout << "line " << lineno << ":" << " syntax error" << endl;
 }
 

@@ -7,7 +7,6 @@
 #include <sstream>
 #include <stdlib.h>
 #include "SymbolTable.h"
-
 #include "hw5_output.hpp"
 using namespace output;
 
@@ -20,9 +19,11 @@ using namespace output;
 #define TYPE_BYTE "BYTE"
 // our own types that we use in the code. Should be lower case to distinguish
 #define TYPE_ID "id"
+#define INVALID_ID "$invalid_id"
 
 extern int yylineno;
 extern SymbolTable symbolTable;
+extern CodeBuffer& buffer;
 
 class Node;
 bool isNumeric(const string &type);
@@ -30,6 +31,8 @@ void checkForValidType(const string &type);
 bool assertAssignableTypes(const string &leftType, const  string &leftId, const string &rightType, const string &rightId, bool toExit = true, bool printError = true);
 void assertBoolean(Node *exp);
 void errorByteTooLargeAndExit(int lineno, int64_t value);
+string getLlvmType(string type);
+void createLlvmArguments(int numArguments, stringstream &code, vector<Node *> *argNames = nullptr);
 
 struct IdType {
     string id;
@@ -45,7 +48,7 @@ public:
          * so basically this are the default junk values indicating that the field is invalid.
          */
         this->type = "unknown_type";
-        this->id = "$invalid_id";
+        this->id = INVALID_ID;
         this->is_numeric = false;
         this->is_valid_numeric_value = false;
         this->numeric_value = -1;
@@ -58,6 +61,8 @@ public:
     }
 
     string realtype();
+    void emitReturnCode();
+    void emitCallCode(Node *node);
     ~Node() = default;
     string type;
     string id;
@@ -270,7 +275,7 @@ public:
         for (unsigned int i = 0; i < argTypes.size(); i++) {
             if (callTypes[i]->realtype() == TYPE_STRING && id != "print") {
                 // cout << "using string not in print" << endl;
-                errorPrototypeMismatch(yylineno, id, argTypes); //TODO: make sure it's the correct error to raise.
+                errorPrototypeMismatch(yylineno, id, argTypes);
                 exit(-1);
             }
 
@@ -309,6 +314,14 @@ public:
         vector<string> v;
         for (auto it = decls->begin(); it < decls->end(); it++) {
             v.push_back((*it).type);
+        }
+
+        return v;
+    }
+    const vector<string> ids() {
+        vector<string> v;
+        for (auto it = decls->begin(); it < decls->end(); it++) {
+            v.push_back((*it).id);
         }
 
         return v;

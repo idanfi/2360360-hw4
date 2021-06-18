@@ -2,9 +2,11 @@
 #include "SymbolTable.h"
 #include "SemanticCheck.h"
 #include "Types.h"
+#include "registerAllocator.h"
 
 // the global symboltable
 SymbolTable symbolTable;
+extern RegisterAllocator regAllocator;
 
 //Table Node:
 
@@ -145,14 +147,30 @@ void SymbolTable::addVariable(const string& name, const string& type, int offset
     }
 }
 
-void SymbolTable::addFunction(const string& name, const string& retType, const vector<string>& argTypes) {
+void SymbolTable::addFunction(const string& name, const string& retType, const vector<string>& argTypes, const vector<string> *ids) {
     TableNode node(name, retType, argTypes, 0);
     add(node, true);
     this->lastFunction = node;
+    if (name == "print" || name == "printi") {
+        return;
+    }
+    // emit to the buffer the function declaration
+    stringstream code;
+    code << "define " << getLlvmType(retType) << " @" << name;
+    createLlvmArguments(argTypes.size(), code);
+    code << " {";
+    buffer.emit(code.str());
+    // add the variables to the function registers
+    int i = 0;
+    for (auto it = ids->begin(); it != ids->end(); ++it) {
+        regAllocator.addVariable(i, (*it));
+        i++;
+    }
 }
 
 void SymbolTable::addFunction(const string& name, const string& retType, FormalDeclList* expList) {
-    addFunction(name, retType, expList->argTypes());
+    vector<string> ids = expList->ids();
+    addFunction(name, retType, expList->argTypes(), &ids);
     createScope();
     int offset = -1;
     vector<IdType>* params = expList->getStatements();
@@ -216,4 +234,14 @@ void SymbolTable::assertExists(string key, bool is_function) {
         }
         exit(-1);
     }
+}
+
+// add ret void to the buffer if the function returns void, delete the relevant scope, and emit close brackets
+void SymbolTable::endFunctionHandler() {
+    if (lastFunction.returnType() == TYPE_VOID) {
+        // adding this unconditionally can lead to unnecessary ret void statements. we don't care :)
+        buffer.emit("ret void");
+    }
+    this->deleteScope();
+    buffer.emit("}\n");
 }

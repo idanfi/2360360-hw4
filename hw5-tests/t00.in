@@ -1,8 +1,20 @@
 // really dummy test
+int func(int x, int y) {
+   x = 2*y;
+   y = x;
+   return y * 5;
+}
+
+bool f() {
+   int x1 = 1;
+   int x2 = 2;
+   int x3 = 3;
+}
+
 void main() {
    int x = 3;
-   int y = x / x;
-   y = x / y;
+   int y;
+   int z = x / y;
    y = x + 5 + 4;
    y = x - 7;
    x = 8;
@@ -10,6 +22,7 @@ void main() {
 
    byte a = 250b + 250b;
    x = 250b + 250b;
-
+   func(x,y);
+   f();
    return;
 }

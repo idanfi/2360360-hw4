@@ -24,13 +24,18 @@ private:
     unordered_map<string, string> varToRegMapping;
 public:
     RegisterAllocator() : counter(0) {}
-    string createRegister(Node* node, string value);
+    string createRegister(Node *node, string value, string id);
     string getCurrentRegisterName() {
         return getNextRegisterName(0);
     }
     string createArithmeticCode(Node *left_node, Node *right_node, string op);
     string getVarRegister(string var) {
         return this->varToRegMapping[var];
+    }
+    void addVariable(int position, const string& varName) {
+        stringstream reg;
+        reg << "%" << position;
+        this->varToRegMapping[varName] = reg.str();
     }
 };
 

@@ -86,16 +86,20 @@ bool replace(string& str, const string& from, const string& to, const BranchLabe
     return true;
 }
 
+// ************ Extra methods that we added *************************** //
+
 // emit what should be included in every run
 void CodeBuffer::preprocess() {
     emitGlobal("declare i32 @printf(i8*, ...)");
     emitGlobal("declare void @exit(i32)");
     emitGlobal("@.int_specifier = constant [4 x i8] c\"%d\\0A\\00\"");
     emitGlobal("@.str_specifier = constant [4 x i8] c\"%s\\0A\\00\"");
+    emitGlobal("@.devidebyzero  = constant [23 x i8] c\"Error division by zero\\00\"");
     emitGlobal("");
     emitGlobal("define void @printi(i32) {");
     emitGlobal("%spec_ptr = getelementptr [4 x i8], [4 x i8]* @.int_specifier, i32 0, i32 0");
     emitGlobal("call i32 (i8*, ...) @printf(i8* %spec_ptr, i32 %0)");
+    emitGlobal("ret void");
     emitGlobal("}");
     emitGlobal("");
     emitGlobal("define void @print(i8*) {");

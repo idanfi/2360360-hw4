@@ -4,6 +4,8 @@
 
 #include "registerAllocator.h"
 
+RegisterAllocator regAllocator;
+
 /*
  * value could be either a register name, number or a bool.
  */
@@ -16,11 +18,14 @@ static string& replace(std::string& str, const std::string& from, const std::str
     return str;
 }
 
-string RegisterAllocator::createRegister(Node *node, string value) {
+string RegisterAllocator::createRegister(Node *node, string value, string id) {
     stringstream code;
     string registerName = getNextRegisterName();
     code << registerName << " = ";
     string type = node->realtype(); // todo: should it be type of realtype?
+    if (id != INVALID_ID && symbolTable.exists(id)) {
+        value = this->getVarRegister(id);
+    }
     if (type == TYPE_INT) {
         code << "add i32 " << value << ", 0";
     } else if (type == TYPE_BYTE) {

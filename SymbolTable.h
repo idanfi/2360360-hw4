@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 #include "hw5_output.hpp"
+#include "bp.hpp"
 
 using namespace std;
 using namespace output;
@@ -17,6 +18,7 @@ struct IdType;
 class FormalDeclList;
 
 extern SymbolTable symbolTable;
+extern CodeBuffer& buffer;
 
 class TableNode {
 public:
@@ -50,7 +52,7 @@ public:
     void createScope();
     void deleteScope();
     void addVariable(const string& name, const string& type, int offset = -9999);
-    void addFunction(const string& name, const string& retType, const vector<string>& argTypes);
+    void addFunction(const string& name, const string& retType, const vector<string>& argTypes, const vector<string> *ids = nullptr);
     void addFunction(const string& name, const string& retType, FormalDeclList* expList);
     void addConditionalStructure(const string& name);
     bool find(string key, TableNode *node_ptr);
@@ -61,12 +63,13 @@ public:
     bool inLoop(bool isContinue);
     void removeWhile();
     void removeSwitch();
+    void endFunctionHandler();
 
 private:
     //attributes:
     list<list<TableNode>>* symbolsTable; //key is name.
     list<int>* offsetsTable;
-    TableNode lastFunction; //TODO: can remove because we're using list.
+    TableNode lastFunction;
     int whileCounter;
     int switchCounter;
 
