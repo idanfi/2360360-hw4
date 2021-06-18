@@ -58,6 +58,8 @@ public:
 	//print the content of the global buffer to stdout
 	void printGlobalBuffer();
 
+	// ******** Extra methods that we added *************** //
+	void preprocess();
 };
 
 #endif

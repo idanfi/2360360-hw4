@@ -24,7 +24,9 @@ string RegisterAllocator::createRegister(Node *node, string value) {
     if (type == TYPE_INT) {
         code << "add i32 " << value << ", 0";
     } else if (type == TYPE_BYTE) {
-        code << "trunc i32 " << replace(value,"b", "") << "to i8";
+        code << "trunc i32 " << replace(value,"b", "") << " to i8" << endl;
+        string curr_reg = this->getCurrentRegisterName();
+        code << this->getNextRegisterName() << " = " << "zext i8 " << curr_reg << " to i32";
     } else if (type == TYPE_BOOL) {
         if (value == "true") {
             code << "add i32 1, 0";
@@ -36,9 +38,9 @@ string RegisterAllocator::createRegister(Node *node, string value) {
         exit(-1);
     }
     // update the register mapping
-    cout << "working on " << node->id << " type " << node->type << endl;
+    // cout << "working on " << node->id << " type " << node->type << endl;
     if (node->type == TYPE_ID) {
-        cout << "inserting [" << node->id << "] = " << registerName << endl;
+        // cout << "inserting [" << node->id << "] = " << registerName << endl;
         this->varToRegMapping[node->id] = registerName;
     }
     node->value = registerName;
@@ -68,9 +70,14 @@ string RegisterAllocator::createArithmeticCode(Node *left_node, Node *right_node
     // write the code
     if (op == "sdiv" || op == "udiv") {
         // todo: special treatment for divide by zero
-        code << this->getNextRegisterName() << "icmp eq i32 " << right << ", 0" << endl;
-        code << "br i1" << this->getCurrentRegisterName() << " label @divideByzero@" << " label @continueCode@" << endl;
+        code << "call void @assertDiv(i32 " << right << ")" << endl;
     }
     code << this->getNextRegisterName() << " = " << op << " i32 " << left << ", " << right;
+    if (left_node->realtype() == TYPE_BYTE && right_node->realtype() == TYPE_BYTE) {
+        string curr_reg = this->getCurrentRegisterName();
+        code << endl << this->getNextRegisterName() << " = " << "trunc i32 " << curr_reg << " to i8";
+        curr_reg = this->getCurrentRegisterName();
+        code << endl << this->getNextRegisterName() << " = " << "zext i8 " << curr_reg << " to i32";
+    }
     return code.str();
 }

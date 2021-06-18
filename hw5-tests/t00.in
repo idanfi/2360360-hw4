@@ -1,10 +1,15 @@
 // really dummy test
 void main() {
    int x = 3;
-   int y;
+   int y = x / x;
+   y = x / y;
    y = x + 5 + 4;
    y = x - 7;
    x = 8;
    y = x * 2;
+
+   byte a = 250b + 250b;
+   x = 250b + 250b;
+
    return;
 }

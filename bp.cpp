@@ -86,3 +86,34 @@ bool replace(string& str, const string& from, const string& to, const BranchLabe
     return true;
 }
 
+// emit what should be included in every run
+void CodeBuffer::preprocess() {
+    emitGlobal("declare i32 @printf(i8*, ...)");
+    emitGlobal("declare void @exit(i32)");
+    emitGlobal("@.int_specifier = constant [4 x i8] c\"%d\\0A\\00\"");
+    emitGlobal("@.str_specifier = constant [4 x i8] c\"%s\\0A\\00\"");
+    emitGlobal("");
+    emitGlobal("define void @printi(i32) {");
+    emitGlobal("%spec_ptr = getelementptr [4 x i8], [4 x i8]* @.int_specifier, i32 0, i32 0");
+    emitGlobal("call i32 (i8*, ...) @printf(i8* %spec_ptr, i32 %0)");
+    emitGlobal("}");
+    emitGlobal("");
+    emitGlobal("define void @print(i8*) {");
+    emitGlobal("%spec_ptr = getelementptr [4 x i8], [4 x i8]* @.str_specifier, i32 0, i32 0");
+    emitGlobal("call i32 (i8*, ...) @printf(i8* %spec_ptr, i8* %0)");
+    emitGlobal("ret void");
+    emitGlobal("}");
+    emitGlobal("");
+    emitGlobal("define void @assertDiv(i32) {");
+    emitGlobal("%divcmp = icmp eq i32 %0, 0");
+    emitGlobal("br i1 %divcmp, label %assertDivIfEqual, label %assertDivIfUnequal");
+    emitGlobal("assertDivIfEqual:");
+    emitGlobal("%div_error_str = getelementptr [23 x i8], [23 x i8]* @.devidebyzero, i32 0, i32 0");
+    emitGlobal("call void @print(i8* %div_error_str)");
+    emitGlobal("call void @exit(i32 -1)");
+    emitGlobal("ret void");
+    emitGlobal("assertDivIfUnequal:");
+    emitGlobal("ret void");
+    emitGlobal("}");
+    emitGlobal("");
+}

@@ -163,7 +163,9 @@ CaseDecl:   CASE NUM COLON Statements {}
 %%
 void yyerror(const char*) {errorSyn(yylineno); exit(-1);}
 int main() {
+    buffer.preprocess();
     yyparse();
+    buffer.printGlobalBuffer();
     buffer.printCodeBuffer();
     return 0;
 }
