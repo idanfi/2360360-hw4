@@ -1,0 +1,162 @@
+%{
+#include <string>
+#include "hw3_output.hpp"
+#include "Types.h"
+#include "SymbolTable.h"
+#include "SemanticCheck.h"
+
+
+using std::string;
+using namespace output;
+using namespace SemanticCheck;
+
+extern int yylineno;
+extern char *yytext;
+int yylex();
+void yyerror(const char*);
+%}
+
+%token VOID
+%right INT
+%token BYTE
+%token BOOL
+%token TRUE
+%token FALSE
+%token RETURN
+%token WHILE
+%token BREAK
+%token CONTINUE
+%token SWITCH
+%token CASE
+%token DEFAULT
+%token COLON
+%token SC
+%token COMMA
+%token LBRACE RBRACE
+%right ASSIGN
+%left OR
+%left AND
+%left EQUALITY
+%nonassoc RELATIONAL
+%left PLUS MINUS
+%left MUL DEV
+%right NOT
+%right LPAREN RPAREN
+%token ID
+%token NUM
+%token B
+%token STRING
+%right IF
+%left ELSE
+
+%%
+Program: Funcs {isMainMissing(); symbolTable.deleteScope();}
+;
+
+Funcs:  /*epsilon*/ {if (*yytext != 0) {errorSyn(yylineno); exit(-1);} }
+        | FuncDecl Funcs {}
+;
+FuncDecl: RetType ID LPAREN Formals RPAREN LBRACE {symbolTable.addFunction($2->id, $1->type, (FormalDeclList*)$4);} Statements RBRACE {symbolTable.deleteScope();}
+
+;
+RetType: Type {$$ = $1;}
+
+;
+RetType: VOID {$$ = $1;}
+
+;
+Formals: /* epsilon */ {$$ = new FormalDeclList();}
+         | FormalsList {$$ = $1;}
+
+;
+FormalsList: FormalDecl {$$ = new FormalDeclList($1);}
+             | FormalDecl COMMA FormalsList {((FormalDeclList *)$3)->addFormalDecl($1); $$ = $3;}
+
+;
+FormalDecl: Type ID {$$ = new Node($1->type, $2->id);}
+
+;
+Statements: Statement {}
+            | Statements Statement {}
+
+;
+Statement: LBRACE BlockOpen Statements RBRACE {symbolTable.deleteScope();}
+           | Type ID SC            {symbolTable.addVariable($2->id, $1->type); $$ = $1;}
+           | Type ID ASSIGN Exp SC {symbolTable.addVariable($2->id, $1->type); $$ = new AssignOp($2, $4);}
+           | ID ASSIGN Exp SC      {symbolTable.assertExists($1->id, false); $$ = new AssignOp($1, $3);}
+           | Call SC               {$$ = $1;}
+           | RETURN SC             {isValidReturn(TYPE_VOID, false); $$ = new TypeExp(TYPE_VOID);}
+           | RETURN Exp SC         {isValidReturn($2->realtype(), true); $$ = $2;}
+           | IF IfOpenMarker LPAREN IfExp RPAREN Statement {symbolTable.deleteScope(); $$ = $4;}
+           | IF IfOpenMarker LPAREN IfExp RPAREN Statement ELSE {symbolTable.deleteScope(); symbolTable.addConditionalStructure("else");} Statement {symbolTable.deleteScope(); $$ = $4;}
+           | WHILE WhileOpen LPAREN WhileExp RPAREN Statement {symbolTable.removeWhile(); $$ = $4;}
+           | BREAK SC                                      {isInLoop(false);}
+           | CONTINUE SC                                   {isInLoop(true);}
+           | SWITCH SwitchOpen LPAREN SwitchExp RPAREN LBRACE CaseList RBRACE {symbolTable.removeSwitch();}
+;
+
+BlockOpen: /*epsilon*/ {symbolTable.createScope();}
+;
+
+IfOpenMarker: /*epsilon*/ {symbolTable.addConditionalStructure("if");}
+;
+
+IfExp: Exp {assertBoolean($1); $$ = $1;}
+;
+
+WhileOpen: /*epsilon*/ {symbolTable.addConditionalStructure("while");}
+;
+
+WhileExp: Exp {assertBoolean($1); $$ = $1;}
+;
+
+SwitchOpen: /*epsilon*/ {symbolTable.addConditionalStructure("switch");}
+;
+
+SwitchExp: Exp {assertAssignableTypes(TYPE_INT, "dummy", $1->realtype(), "dummy"); $$ = $1;}
+;
+
+Call:   ID LPAREN ExpList RPAREN {$$ = new CallOp($1, (ExpList*)$3);}
+        | ID LPAREN RPAREN {$$ = new CallOp($1, new ExpList());}
+;
+
+ExpList:    Exp {$$ = new ExpList($1);}
+            | Exp COMMA ExpList {((ExpList *)$3)->addExp($1); $$ = $3;}
+;
+
+Type:   INT {$$ = $1;}
+        | BYTE {$$ = $1;}
+        | BOOL {$$ = $1;}
+;
+
+Exp:    LPAREN Exp RPAREN {$$ = $2;}
+        | Exp MINUS Exp {$$ = new BinaryArithmeticOp($1, $3);}
+        | Exp PLUS Exp {$$ = new BinaryArithmeticOp($1, $3);}
+        | Exp DEV Exp {$$ = new BinaryArithmeticOp($1, $3);}
+        | Exp MUL Exp {$$ = new BinaryArithmeticOp($1, $3);}
+        | ID {$$ = $1; symbolTable.assertExists($1->id, false);}
+        | Call {$$ = $1;}
+        | NUM {$$ = new NumberExp($1);}
+        | NUM B {$$ = new NumberExp($1, true);}
+        | STRING {$$ = $1;}
+        | TRUE {$$ = $1;}
+        | FALSE {$$ = $1;}
+        | NOT Exp {$$ = new UnaryLogicOp($2);}
+        | Exp AND Exp {$$ = new BinaryLogicOp($1, $3);}
+        | Exp OR Exp {$$ = new BinaryLogicOp($1, $3);}
+        | Exp EQUALITY Exp {$$ = new RelOp($1, $3);}
+        | Exp RELATIONAL Exp {$$ = new RelOp($1, $3);}
+        //| LPAREN Type RPAREN Exp {}
+;
+
+CaseList:   CaseDecl CaseList {}
+            | CaseDecl {}
+            | DEFAULT COLON Statements {}
+;
+
+CaseDecl:   CASE NUM COLON Statements {}
+;
+
+%%
+void yyerror(const char*) {errorSyn(yylineno);}
+int main() {return yyparse();}
