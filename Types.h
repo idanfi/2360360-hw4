@@ -49,7 +49,7 @@ public:
         this->is_numeric = false;
         this->is_valid_numeric_value = false;
         this->numeric_value = -1;
-        this->registerName = "%invalid_register";
+        this->value = "%invalid_value";
     }
 
     Node(string type, string id) : Node() {
@@ -64,7 +64,7 @@ public:
     bool is_numeric;
     int64_t numeric_value;
     bool is_valid_numeric_value;
-    string registerName;
+    string value;
 };
 
 // all relationship operators - "<", ">", "==" etc.
@@ -194,6 +194,7 @@ public:
     NumberExp(Node *exp, bool is_byte = false) {
         this->is_numeric = true;
         this->numeric_value = stoll(exp->id, nullptr, 10);
+        this->value = exp->id;
         this->is_valid_numeric_value = true;
         if (is_byte) {
             if (numeric_value > 255) {

@@ -8,6 +8,7 @@
 #include <string>
 #include <sstream>
 #include "Types.h"
+#include <unordered_map>
 
 using namespace std;
 
@@ -20,12 +21,16 @@ private:
         s1 << "%t" << this->counter;
         return s1.str();
     }
-
+    unordered_map<string, string> varToRegMapping;
 public:
     RegisterAllocator() : counter(0) {}
-    string createRegister(string type, string value);
+    string createRegister(Node* node, string value);
     string getCurrentRegisterName() {
         return getNextRegisterName(0);
+    }
+    string createArithmeticCode(Node *left_node, Node *right_node, string op);
+    string getVarRegister(string var) {
+        return this->varToRegMapping[var];
     }
 };
 

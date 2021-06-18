@@ -74,7 +74,8 @@ void errorByteTooLargeAndExit(int lineno, int64_t value) {
 
 string Node::realtype() {
     string type = this->type;
-    if (type ==TYPE_ID) {
+    if (type == TYPE_ID) {
+        // cout << "getting realtype of " << this->id << " - " << yylineno << endl;
         type = symbolTable.getReturnType(this->id);
     }
     return type;
