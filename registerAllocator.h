@@ -45,7 +45,7 @@ public:
     void funcionEpilog();
     string functionGetVarReg(string var);
     void storeVar(string var, string value);
-    void loadVar(string var);
+    string loadVar(string var);
 };
 
 

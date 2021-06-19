@@ -52,6 +52,8 @@ void RegisterAllocator::createRegister(Node *node, string value, string id) {
 
 // add, sub, mul, udiv, sdiv
 string RegisterAllocator::createArithmeticCode(Node *left_node, Node *right_node, string op) {
+    left_node->loadExp();
+    right_node->loadExp();
     stringstream code;
     string left;
     string right;
@@ -131,7 +133,6 @@ void RegisterAllocator::functionProlog() {
     for (int i=0; i<50; i++) {
         buffer.emit("%s" + to_string(i) + " = alloca i32, i32 0");
     }
-    buffer.printCodeBuffer();
 }
 
 void RegisterAllocator::storeVar(string var, string value) {
@@ -140,8 +141,10 @@ void RegisterAllocator::storeVar(string var, string value) {
     buffer.emit(code);
 }
 
-void RegisterAllocator::loadVar(string var) {
+string RegisterAllocator::loadVar(string var) {
     string stackReg = this->varToStackMap[var];
     string new_reg = this->getNextRegisterName();
-    buffer.emit(new_reg + " = load i32, i32* %" + stackReg);
+    buffer.emit(new_reg + " = load i32, i32* " + stackReg);
+    this->varToRegMapping[var] = new_reg;
+    return new_reg;
 }

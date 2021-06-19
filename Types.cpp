@@ -82,6 +82,12 @@ string Node::realtype() {
     return type;
 }
 
+void Node::loadExp() {
+    if (this->type == TYPE_ID) {
+        this->value = regAllocator.loadVar(this->id);
+    }
+}
+
 string getLlvmType(string type) {
     string llvmType = type;
     if (llvmType == TYPE_VOID) {
@@ -107,21 +113,28 @@ void createLlvmArguments(int numArguments, stringstream &code, vector<Node *>* e
 }
 
 void Node::addBreak() {
-    int jmpInstr = buffer.emit("br @");
+    int jmpInstr = buffer.emit("br label @");
     this->nextList.push_back({jmpInstr, FIRST});
 }
 
 void Node::addContinue() {
-    int jmpInstr = buffer.emit("br @");
+    int jmpInstr = buffer.emit("br label @");
     this->startLoopList.push_back({jmpInstr, FIRST});
 }
 
-void Node::finishWhile(string whileStartLabel, Node *whileExp) {
+void Node::emitWhileOpen() {
+    int jmpInstr = buffer.emit("br label @");
+    this->nextInstruction = buffer.genLabel();
+    vector<pair<int,BranchLabelIndex>> v1 = {{jmpInstr, FIRST}};
+    buffer.bpatch(v1, this->nextInstruction);
+}
+
+void Node::emitWhileEnd(string whileStartLabel, Node *whileExp) {
     // backpatch and jump to the start of the loop
-    cout << "finishWhile" << endl;
+    //cout << "emitWhileEnd" << endl;
     buffer.bpatch(this->startLoopList, whileStartLabel);
     stringstream code;
-    code << "br %" << whileStartLabel;
+    code << "br label %" << whileStartLabel;
     buffer.emit(code.str());
     // label the loop exit
     string whileEndLabel = buffer.genLabel();
@@ -131,7 +144,7 @@ void Node::finishWhile(string whileStartLabel, Node *whileExp) {
 }
 
 void Node::emitWhileExp(string cmpReg) {
-    cout << "emitWhileExp: start" << endl;
+    //cout << "emitWhileExp: start" << endl;
     stringstream code;
     code << "br i1 " << cmpReg << ", label @, label @";
     int cmpAddress = buffer.emit(code.str());
@@ -139,11 +152,11 @@ void Node::emitWhileExp(string cmpReg) {
     vector<pair<int,BranchLabelIndex>> v1 = {{cmpAddress, FIRST}};
     buffer.bpatch(v1, whileStartCodeLabel);
     this->falseList.push_back({cmpAddress, SECOND});
-    cout << "emitWhileExp: finish" << endl;
+    //cout << "emitWhileExp: finish" << endl;
 }
 
 void Node::mergeLists(Node *node_a, Node *node_b) {
-    cout << "merging lists" << endl;
+    //cout << "merging lists" << endl;
     this->nextList = buffer.merge(node_a->nextList, node_b->nextList);
     this->trueList = buffer.merge(node_a->trueList, node_b->trueList);
     this->falseList = buffer.merge(node_a->falseList, node_b->falseList);
@@ -151,7 +164,7 @@ void Node::mergeLists(Node *node_a, Node *node_b) {
 }
 
 void Node::emitCallCode(Node* node) {
-    cout << "start emitCallCode" << endl;
+    //cout << "start emitCallCode" << endl;
     ExpList* expListNode = nullptr;
     vector<Node *> *expressions = nullptr;
     int size = 0;
@@ -172,7 +185,7 @@ void Node::emitCallCode(Node* node) {
     code << "call " << llvmType << " @" << this->id;
     createLlvmArguments(size, code, expressions);
     buffer.emit(code.str());
-    cout << "finish emitCallCode - " << code.str() << endl;
+    //cout << "finish emitCallCode - " << code.str() << endl;
 }
 
 void Node::emitReturnCode() {
@@ -196,6 +209,8 @@ BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) 
         errorMismatch(yylineno);
         exit(-1);
     }
+    left->loadExp();
+    right->loadExp();
     if (isAnd) {
         buffer.bpatch(left->trueList, marker->nextInstruction);
         // todo: implement
@@ -251,6 +266,8 @@ RelOp::RelOp(Node *left, Node *right, string op) {
         errorMismatch(yylineno);
         exit(-1);
     }
+    left->loadExp();
+    right->loadExp();
     // write to the buffer the operation, and update the value todo: check different types - int vs byte
     this->value = regAllocator.emitCmpCode(left->value, right->value, op);
     delete left;

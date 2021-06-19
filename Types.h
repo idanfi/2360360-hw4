@@ -71,8 +71,10 @@ public:
     void addBreak();
     void addContinue();
     void mergeLists(Node *node_a, Node *node_b);
-    void finishWhile(string whileStartLabel, Node *whileExp);
+    void emitWhileOpen();
+    void emitWhileEnd(string whileStartLabel, Node *whileExp);
     void emitWhileExp(string cmpReg);
+    void loadExp();
     ~Node() = default;
     string type;
     string id;
@@ -105,6 +107,7 @@ public:
 class UnaryLogicOp : public Node {
 public:
     UnaryLogicOp(Node *exp) {
+        exp->loadExp();
         string type = exp->realtype();
         if (type == TYPE_BOOL) {
             this->type = TYPE_BOOL;

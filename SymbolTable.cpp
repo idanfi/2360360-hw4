@@ -166,6 +166,7 @@ void SymbolTable::addFunction(const string& name, const string& retType, const v
         regAllocator.addVariable(i, (*it));
         i++;
     }
+    regAllocator.functionProlog();
 }
 
 void SymbolTable::addFunction(const string& name, const string& retType, FormalDeclList* expList) {
