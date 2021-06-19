@@ -37,6 +37,8 @@ public:
         reg << "%" << position;
         this->varToRegMapping[varName] = reg.str();
     }
+    // returning the register that assigned the cmp
+    string emitCmpCode(string left, string right, string op);
 };
 
 

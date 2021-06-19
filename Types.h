@@ -19,6 +19,7 @@ using namespace output;
 #define TYPE_BYTE "BYTE"
 // our own types that we use in the code. Should be lower case to distinguish
 #define TYPE_ID "id"
+#define TYPE_RELOP "relop"
 #define INVALID_ID "$invalid_id"
 #define TYPE_MARKER "marker"
 
@@ -87,18 +88,7 @@ public:
 // all relationship operators - "<", ">", "==" etc.
 class RelOp : public Node {
 public:
-    RelOp(Node *left, Node *right) {
-        //cout<< left->id <<" "<< left->type <<" "<< left->realtype() <<" "<< right->id <<" "<< right->type <<" "<< right->realtype()<<endl;
-        if (isNumeric(left->realtype()) && isNumeric(right->realtype())) {
-            this->type = TYPE_BOOL;
-            this->is_numeric = false;
-        } else {
-            errorMismatch(yylineno);
-            exit(-1);
-        }
-        delete left;
-        delete right;
-    }
+    RelOp(Node *left, Node *right, string op);
     ~RelOp() = default;
 };
 
@@ -190,12 +180,24 @@ public:
 
 class TypeExp : public Node {
 public:
-    TypeExp(string _type) {
+    TypeExp(string _type, string relOp = "dummyStr") {
         checkForValidType(_type);
         this->type = _type;
         this->is_numeric = isNumeric(type);
+        if (_type == TYPE_RELOP) {
+            this->id = relOp;
+        }
     }
     ~TypeExp() = default;
+};
+
+class RelOpExp : public Node {
+public:
+    RelOpExp(string relOp) {
+        this->type = TYPE_RELOP;
+        this->id = relOp;
+    }
+    ~RelOpExp() = default;
 };
 
 class NumberExp : public Node {

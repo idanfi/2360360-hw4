@@ -82,3 +82,26 @@ string RegisterAllocator::createArithmeticCode(Node *left_node, Node *right_node
     }
     return code.str();
 }
+
+string RegisterAllocator::emitCmpCode(string left, string right, string op) {
+    stringstream code;
+    string reg = this->getNextRegisterName();
+    code << reg << " = icmp ";
+    // todo: should we care about signed vs unsigned?
+    if (op == "==") {
+        code << "eq ";
+    } else if (op == "!=") {
+        code << "ne ";
+    } else if (op == "<") {
+        code << "slt ";
+    } else if (op == "<=") {
+        code << "sle ";
+    } else if (op == ">") {
+        code << "sgt ";
+    } else if (op == ">=") {
+        code << "sge ";
+    }
+    code << "i32 " << left << ", " << right;
+    buffer.emit(code.str());
+    return reg;
+}

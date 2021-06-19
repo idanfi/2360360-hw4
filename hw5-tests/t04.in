@@ -1,0 +1,12 @@
+// more really dummy test
+void main() {
+    int x = 5;
+    int y = 3;
+    int a;
+    bool z = x < y;
+    z = x <= y;
+    z = x > y;
+    z = x >= y;
+    z = x == y;
+    z = x != y;
+}

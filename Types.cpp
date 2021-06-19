@@ -30,7 +30,7 @@ void checkForValidType(const string &type) {
         if (type == valid_types[i])
             return;
     }
-    //cout << "found invalid type: " << type << endl;
+    cout << "found invalid type: " << type << endl;
     errorMismatch(yylineno);
     exit(-1);
 }
@@ -209,6 +209,22 @@ BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) 
         // update the result value to be the last register
         this->value = resReg;
     }
+    delete left;
+    delete right;
+}
+
+RelOp::RelOp(Node *left, Node *right, string op) {
+    // cout<< left->id <<" "<< left->type <<" "<< left->realtype() <<" "<< right->id <<" "<< right->type <<" "<< right->realtype()<<endl;
+    cout << "op = " << op << endl;
+    if (isNumeric(left->realtype()) && isNumeric(right->realtype())) {
+        this->type = TYPE_BOOL;
+        this->is_numeric = false;
+    } else {
+        errorMismatch(yylineno);
+        exit(-1);
+    }
+    // write to the buffer the operation, and update the value todo: check different types - int vs byte
+    this->value = regAllocator.emitCmpCode(left->value, right->value, op);
     delete left;
     delete right;
 }
