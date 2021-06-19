@@ -135,3 +135,32 @@ void Node::emitReturnCode() {
     code << reg;
     buffer.emit(code.str());
 }
+
+BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) {
+    if (left->realtype() == TYPE_BOOL && right->realtype() == TYPE_BOOL) {
+        this->type = TYPE_BOOL;
+        this->is_numeric = false;
+    } else {
+        errorMismatch(yylineno);
+        exit(-1);
+    }
+    if (isAnd) {
+        buffer.bpatch(left->trueList, marker->nextInstruction);
+        this->trueList = right->trueList;
+        this->falseList = buffer.merge(left->falseList, right->falseList);
+    } else { // or op
+        buffer.bpatch(left->falseList, marker->nextInstruction);
+        this->trueList = buffer.merge(left->trueList, right->trueList);
+        this->falseList = right->falseList;
+        // check for short circuit evaluation
+        string compReg = regAllocator.getNextRegisterName();
+        stringstream code;
+        code << compReg << " = icmp ne i32 " << regAllocator.getVarRegister(left->id) << ", 0";
+        buffer.emit(code.str());
+        stringstream code2;
+        code2 << "br i1 " << compReg << ", label @, label @";
+        buffer.emit(code2.str());
+    }
+    delete left;
+    delete right;
+}

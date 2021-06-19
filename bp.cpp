@@ -121,3 +121,7 @@ void CodeBuffer::preprocess() {
     emitGlobal("}");
     emitGlobal("");
 }
+
+int CodeBuffer::nextInstruction() {
+    return buffer.size();
+}

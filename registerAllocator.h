@@ -15,14 +15,14 @@ using namespace std;
 class RegisterAllocator {
 private:
     unsigned int counter;
+    unordered_map<string, string> varToRegMapping;
+public:
     string getNextRegisterName(int increment = 1) {
         this->counter += increment;
         stringstream s1;
         s1 << "%t" << this->counter;
         return s1.str();
     }
-    unordered_map<string, string> varToRegMapping;
-public:
     RegisterAllocator() : counter(0) {}
     string createRegister(Node *node, string value, string id);
     string getCurrentRegisterName() {

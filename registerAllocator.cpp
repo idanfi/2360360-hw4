@@ -33,11 +33,7 @@ string RegisterAllocator::createRegister(Node *node, string value, string id) {
         string curr_reg = this->getCurrentRegisterName();
         code << this->getNextRegisterName() << " = " << "zext i8 " << curr_reg << " to i32";
     } else if (type == TYPE_BOOL) {
-        if (value == "true") {
-            code << "add i32 1, 0";
-        } else { // value == false or default value
-            code << "add i32 0, 0";
-        }
+        code << "add i32 0, " << value;
     } else { // should never happen todo: remove
         cout << "ERROR: invalid type: " << type << " with value = " << value << endl;
         exit(-1);

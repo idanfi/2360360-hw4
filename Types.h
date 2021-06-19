@@ -20,10 +20,13 @@ using namespace output;
 // our own types that we use in the code. Should be lower case to distinguish
 #define TYPE_ID "id"
 #define INVALID_ID "$invalid_id"
+#define TYPE_MARKER "marker"
 
 extern int yylineno;
 extern SymbolTable symbolTable;
 extern CodeBuffer& buffer;
+class RegisterAllocator;
+extern RegisterAllocator regAllocator;
 
 class Node;
 bool isNumeric(const string &type);
@@ -53,6 +56,7 @@ public:
         this->is_valid_numeric_value = false;
         this->numeric_value = -1;
         this->value = "%invalid_value";
+        this->nextInstruction = -1;
     }
 
     Node(string type, string id) : Node() {
@@ -70,6 +74,10 @@ public:
     int64_t numeric_value;
     bool is_valid_numeric_value;
     string value;
+    vector<pair<int,BranchLabelIndex>> trueList;
+    vector<pair<int,BranchLabelIndex>> falseList;
+    vector<pair<int,BranchLabelIndex>> nextList;
+    string nextInstruction;
 };
 
 // all relationship operators - "<", ">", "==" etc.
@@ -93,17 +101,7 @@ public:
 // binary logic operators - "and" and "or" .
 class BinaryLogicOp : public Node {
 public:
-    BinaryLogicOp(Node *left, Node *right) {
-        if (left->realtype() == TYPE_BOOL && right->realtype() == TYPE_BOOL) {
-            this->type = TYPE_BOOL;
-            this->is_numeric = false;
-        } else {
-            errorMismatch(yylineno);
-            exit(-1);
-        }
-        delete left;
-        delete right;
-    }
+    BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker);
     ~BinaryLogicOp() = default;
 };
 
@@ -120,6 +118,8 @@ public:
             errorMismatch(yylineno);
             exit(-1);
         }
+        this->trueList = exp->falseList;
+        this->falseList = exp->trueList;
         delete exp;
     }
     ~UnaryLogicOp() = default;
@@ -330,4 +330,18 @@ private:
     vector<IdType>* decls;
 };
 
+class Marker : public Node {
+public:
+    Marker(bool isMarkerM) {
+        this->type = TYPE_MARKER;
+        // todo: should this be the nextList??
+        if (isMarkerM) {
+            this->nextInstruction = buffer.genLabel();
+        } else {
+            this->nextList.push_back({buffer.nextInstruction(), FIRST});
+            buffer.emit("br label @");
+        }
+    }
+    ~Marker() = default;
+};
 #endif //HW3_TYPES_H
