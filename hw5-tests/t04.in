@@ -1,13 +1,8 @@
 // todo: segmentation fault check
 void main() {
    int x = 0;
-   while(x < 1) {
+   while(x < 10) {
        printi(x);
-       x = x - 1;
-       break;
-       int y = 17;
-       while (y > 8) {
-            continue;
-       }
+       x = x + 1;
    }
 }

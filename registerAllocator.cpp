@@ -18,8 +18,9 @@ static string& replace(std::string& str, const std::string& from, const std::str
     return str;
 }
 
-string RegisterAllocator::createRegister(Node *node, string value, string id) {
+void RegisterAllocator::createRegister(Node *node, string value, string id) {
     stringstream code;
+    bool needStore = false;
     string registerName = getNextRegisterName();
     code << registerName << " = ";
     string type = node->realtype(); // todo: should it be type of realtype?
@@ -45,7 +46,8 @@ string RegisterAllocator::createRegister(Node *node, string value, string id) {
         this->varToRegMapping[node->id] = registerName;
     }
     node->value = registerName;
-    return code.str();
+    buffer.emit(code.str());
+    this->storeVar(node->id, registerName);
 }
 
 // add, sub, mul, udiv, sdiv
@@ -104,4 +106,42 @@ string RegisterAllocator::emitCmpCode(string left, string right, string op) {
     code << "i32 " << left << ", " << right;
     buffer.emit(code.str());
     return reg;
+}
+
+void RegisterAllocator::funcionEpilog() {
+    this->varToStackMap.clear();
+}
+
+string RegisterAllocator::functionGetVarReg(string var) {
+    auto reg = this->varToStackMap.find(var);
+    string regOut;
+    // first time allocating this variable in the stack
+    if (reg == this->varToStackMap.end()) {
+        stringstream stackRegister;
+        stackRegister << "%s" << this->varToStackMap.size();
+        regOut = stackRegister.str();
+        this->varToStackMap[var] = regOut;
+    } else {
+        regOut = reg->second;
+    }
+    return regOut;
+}
+
+void RegisterAllocator::functionProlog() {
+    for (int i=0; i<50; i++) {
+        buffer.emit("%s" + to_string(i) + " = alloca i32, i32 0");
+    }
+    buffer.printCodeBuffer();
+}
+
+void RegisterAllocator::storeVar(string var, string value) {
+    string stackReg = functionGetVarReg(var);
+    string code = "store i32 " + value + ", i32* " + stackReg;
+    buffer.emit(code);
+}
+
+void RegisterAllocator::loadVar(string var) {
+    string stackReg = this->varToStackMap[var];
+    string new_reg = this->getNextRegisterName();
+    buffer.emit(new_reg + " = load i32, i32* %" + stackReg);
 }

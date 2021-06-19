@@ -16,6 +16,8 @@ class RegisterAllocator {
 private:
     unsigned int counter;
     unordered_map<string, string> varToRegMapping;
+    unordered_map<string, string> varToStackMap;
+    string getVarStackReg(string var);
 public:
     string getNextRegisterName(int increment = 1) {
         this->counter += increment;
@@ -24,7 +26,7 @@ public:
         return s1.str();
     }
     RegisterAllocator() : counter(0) {}
-    string createRegister(Node *node, string value, string id);
+    void createRegister(Node *node, string value, string id);
     string getCurrentRegisterName() {
         return getNextRegisterName(0);
     }
@@ -39,6 +41,11 @@ public:
     }
     // returning the register that assigned the cmp
     string emitCmpCode(string left, string right, string op);
+    void functionProlog();
+    void funcionEpilog();
+    string functionGetVarReg(string var);
+    void storeVar(string var, string value);
+    void loadVar(string var);
 };
 
 

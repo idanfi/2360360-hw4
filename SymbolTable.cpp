@@ -242,6 +242,7 @@ void SymbolTable::endFunctionHandler() {
         // adding this unconditionally can lead to unnecessary ret void statements. we don't care :)
         buffer.emit("ret void");
     }
+    regAllocator.funcionEpilog();
     this->deleteScope();
     buffer.emit("}\n");
 }
