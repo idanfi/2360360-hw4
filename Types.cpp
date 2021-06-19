@@ -146,6 +146,7 @@ BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) 
     }
     if (isAnd) {
         buffer.bpatch(left->trueList, marker->nextInstruction);
+        // todo: implement
         this->trueList = right->trueList;
         this->falseList = buffer.merge(left->falseList, right->falseList);
     } else { // or op
@@ -159,7 +160,30 @@ BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) 
         buffer.emit(code.str());
         stringstream code2;
         code2 << "br i1 " << compReg << ", label @, label @";
-        buffer.emit(code2.str());
+        int brInstr = buffer.emit(code2.str());
+
+        // the false label
+        string label = buffer.genLabel();
+        compReg = regAllocator.getNextRegisterName();
+        stringstream code3;
+        code3 << compReg << " = icmp ne i32 " << regAllocator.getVarRegister(left->id) << ", 0";
+        buffer.emit(code3.str());
+        int jmpInstr = buffer.emit("br label @");
+
+        // end of short circuit evaluation, create the phi command and backpatch all
+        string label2 = buffer.genLabel();
+        stringstream code4;
+        string resReg = regAllocator.getNextRegisterName();
+        code4 << resReg << " phi i1 [true @], [" << compReg << ", @]";
+        int phiInstr = buffer.emit(code4.str());
+        vector<pair<int,BranchLabelIndex>> v1 = {{brInstr, SECOND}, {jmpInstr, FIRST}, {phiInstr, SECOND}};
+        buffer.bpatch(v1, label2);
+        vector<pair<int,BranchLabelIndex>> v2 = {{brInstr, FIRST}};
+        buffer.bpatch(v2, label);
+        vector<pair<int,BranchLabelIndex>> v3 = {{phiInstr, FIRST}};
+        buffer.bpatch(v3, marker->nextInstruction);
+        // update the result value to be the last register
+        this->value = resReg;
     }
     delete left;
     delete right;
