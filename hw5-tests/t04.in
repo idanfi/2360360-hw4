@@ -1,4 +1,4 @@
-// todo: segmentation fault check
+// simple while check
 void main() {
    int x = 0;
    while(x < 10) {

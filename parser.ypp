@@ -95,7 +95,7 @@ Statement: LBRACE BlockOpen Statements RBRACE {symbolTable.deleteScope(); $$ = $
            | WHILE WhileOpen LPAREN WhileExp RPAREN Statement {symbolTable.removeWhile(); $6->emitWhileEnd($2->nextInstruction, $4); $$ = $6;}
            | BREAK SC                                      {isInLoop(false); $$ = $1; $$->addBreak();}
            | CONTINUE SC                                   {isInLoop(true);  $$ = $1; $$->addContinue();}
-           | SWITCH SwitchOpen LPAREN SwitchExp RPAREN LBRACE CaseList RBRACE {symbolTable.removeSwitch();}
+           | SWITCH SwitchOpen LPAREN SwitchExp RPAREN LBRACE CaseList RBRACE {symbolTable.removeSwitch(); ((CaseList *)$7)->emitCase($4->nextList, $4->value);}
 ;
 
 BlockOpen: /*epsilon*/ {symbolTable.createScope();}
@@ -113,10 +113,10 @@ WhileOpen: /*epsilon*/ {symbolTable.addConditionalStructure("while"); $$ = new N
 WhileExp: Exp {assertBoolean($1); $1->loadExp(); $$->emitWhileExp($1->value); $$ = $1;}
 ;
 
-SwitchOpen: /*epsilon*/ {symbolTable.addConditionalStructure("switch");}
+SwitchOpen: /*epsilon*/ {symbolTable.addConditionalStructure("switch"); $$ = new Node();}
 ;
 
-SwitchExp: Exp {assertAssignableTypes(TYPE_INT, "dummy", $1->realtype(), "dummy"); $1->loadExp(); $$ = $1;}
+SwitchExp: Exp {assertAssignableTypes(TYPE_INT, "dummy", $1->realtype(), "dummy"); $1->loadExp(); $$ = $1; $$->emitSwitchOpen();}
 ;
 
 Call:   ID LPAREN ExpList RPAREN {$1->emitCallCode($3); $$ = new CallOp($1, (ExpList*)$3);}
@@ -158,13 +158,17 @@ BoolMarkerM: /* epsilon */ {$$ = new Marker(true);}
 BoolMarkerN: /* epsilon */ {$$ = new Marker(false);}
 ;
 
-CaseList:   CaseDecl CaseList {}
-            | CaseDecl {}
-            | DEFAULT COLON Statements {}
+CaseList:   CaseDecl CaseList {$$ = $2; ((CaseList *)$$)->addCase($1->id, $1->nextInstruction); $$->mergeLists($1, $2);}
+            | CaseDecl {$$ = $1;}
+            | DEFAULT DefaultLabel COLON Statements {$$ = new CaseList(); ((CaseList *)$$)->hasDefault = true; ((CaseList *)$$)->defaultLabel = $2->nextInstruction; $$->nextList = $4->nextList}
 ;
 
-CaseDecl:   CASE NUM COLON Statements {}
+DefaultLabel: /* epsilon */ {$$ = new Node(); $$->nextInstruction = buffer.genLabel();}
+
+CaseDecl:   CASE CaseHead NUM COLON Statements {$$ = new CaseList($3->id, $2->nextInstruction); $$->nextList = $5->nextList;}
 ;
+
+CaseHead: /* epsilon */ { $$ = new Node(); $$->nextInstruction = buffer.genLabel();}
 
 %%
 void yyerror(const char*) {errorSyn(yylineno); exit(-1);}

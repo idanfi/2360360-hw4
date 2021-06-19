@@ -104,7 +104,12 @@ void createLlvmArguments(int numArguments, stringstream &code, vector<Node *>* e
         if (i != 0) {
             code << ", ";
         }
-        code << "i32";
+        if (expressions && (*expressions)[i]->type == TYPE_STRING) {
+            // cout << (*expressions)[i]->id << " register is: " << regAllocator.getVarRegister((*expressions)[i]->id);
+            code << "i8*";
+        } else {
+            code << "i32";
+        }
         if (expressions) {
             code << " " << regAllocator.getVarRegister((*expressions)[i]->id);
         }
@@ -127,6 +132,11 @@ void Node::emitWhileOpen() {
     this->nextInstruction = buffer.genLabel();
     vector<pair<int,BranchLabelIndex>> v1 = {{jmpInstr, FIRST}};
     buffer.bpatch(v1, this->nextInstruction);
+}
+
+void Node::emitSwitchOpen() {
+    int jmpInstr = buffer.emit("br label @");
+    this->nextList.push_back({jmpInstr, FIRST});
 }
 
 void Node::emitWhileEnd(string whileStartLabel, Node *whileExp) {
@@ -165,6 +175,7 @@ void Node::mergeLists(Node *node_a, Node *node_b) {
 
 void Node::emitCallCode(Node* node) {
     //cout << "start emitCallCode" << endl;
+    // todo: should support numeric and string arguments to functions
     ExpList* expListNode = nullptr;
     vector<Node *> *expressions = nullptr;
     int size = 0;
@@ -272,4 +283,28 @@ RelOp::RelOp(Node *left, Node *right, string op) {
     this->value = regAllocator.emitCmpCode(left->value, right->value, op);
     delete left;
     delete right;
+}
+
+void CaseList::emitCase(vector<pair<int, BranchLabelIndex>> &nextList, string switchVal) {
+    // first create jmp after default and backpatch the initial jump
+    int defaultJmp = buffer.emit("br label @");
+    vector<pair<int, BranchLabelIndex>> v1 = {{defaultJmp, FIRST}};
+    buffer.bpatch(nextList, buffer.genLabel());
+    // now emit the switch with the llvm syntax
+    string code = "switch i32 " + switchVal + ", label @ [ ";
+    for(auto it = this->caseList.begin(); it != this->caseList.end(); ++it) {
+        code += "i32 " + (*it).first + ", label %" + (*it).second + " ";
+    }
+    code += "]";
+    int switchInstr = buffer.emit(code);
+    string afterSwitchLabel = buffer.genLabel();
+    vector<pair<int, BranchLabelIndex>> v2 = {{switchInstr, FIRST}};
+    if (this->hasDefault) {
+        buffer.bpatch(v2, this->defaultLabel);
+    } else {
+        buffer.bpatch(v2, afterSwitchLabel);
+    }
+    // backpatch all the break in the switch
+    buffer.bpatch(this->nextList, afterSwitchLabel);
+    buffer.bpatch(v1, afterSwitchLabel);
 }

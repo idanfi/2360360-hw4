@@ -72,6 +72,7 @@ public:
     void addContinue();
     void mergeLists(Node *node_a, Node *node_b);
     void emitWhileOpen();
+    void emitSwitchOpen();
     void emitWhileEnd(string whileStartLabel, Node *whileExp);
     void emitWhileExp(string cmpReg);
     void loadExp();
@@ -356,4 +357,37 @@ public:
     }
     ~Marker() = default;
 };
+
+class CaseList : public Node {
+public:
+    CaseList() = default;
+    CaseList(string number, string caseStartLabel) {
+        addCase(number, caseStartLabel);
+        this->id = number;
+        this->hasDefault = false;
+        this->nextInstruction = caseStartLabel;
+    }
+    ~CaseList() = default;
+    void addCase(string number, string caseStartLabel) {
+        this->caseList.insert(this->caseList.begin(), {number, caseStartLabel});
+    }
+    vector<pair<string, string>> getCaseList() {
+        return this->caseList;
+    }
+    unsigned int size() {
+        return this->caseList.size();
+    }
+    void printCaseList() { //todo: remove. this is for debug
+        cout << "hasDefault = " << this->hasDefault << endl;
+        for (auto it = this->caseList.begin(); it != this->caseList.end(); ++it) {
+            cout << "case : "<< (*it).first << " with label: " << (*it).second << endl;
+        }
+    }
+    bool hasDefault;
+    string defaultLabel;
+    void emitCase(vector<pair<int, BranchLabelIndex>> &nextList, string switchVal);
+private:
+    vector<pair<string, string>> caseList;
+};
+
 #endif //HW3_TYPES_H
