@@ -83,16 +83,16 @@ Statements: Statement {$$ = $1;}
             | Statements Statement {$$->mergeLists($1, $2);}
 
 ;
-Statement: LBRACE BlockOpen Statements RBRACE {symbolTable.deleteScope(); $$ = $3}
+Statement: LBRACE BlockOpen Statements RBRACE {symbolTable.deleteScope(); $$ = $3;}
            | Type ID SC            {symbolTable.addVariable($2->id, $1->type); $$ = $1; buffer.emit(regAllocator.createRegister($2, "0", INVALID_ID));}
            | Type ID ASSIGN Exp SC {symbolTable.addVariable($2->id, $1->type); buffer.emit(regAllocator.createRegister($2, $4->value, $4->id)); $$ = new AssignOp($2, $4);}
            | ID ASSIGN Exp SC      {symbolTable.assertExists($1->id, false); buffer.emit(regAllocator.createRegister($1, $3->value, $4->id)); $$ = new AssignOp($1, $3);}
-           | Call SC               {$$ = $1;}
+           | Call SC               {$$ = $1; cout << "finish call" << endl;}
            | RETURN SC             {isValidReturn(TYPE_VOID, false); $$ = new TypeExp(TYPE_VOID); buffer.emit("ret void");}
-           | RETURN Exp SC         {isValidReturn($2->realtype(), true); $$ = $2; $2->emitReturnCode()}
+           | RETURN Exp SC         {isValidReturn($2->realtype(), true); $$ = $2; $2->emitReturnCode();}
            | IF IfOpenMarker LPAREN IfExp RPAREN Statement {symbolTable.deleteScope(); $$ = $4;}
            | IF IfOpenMarker LPAREN IfExp RPAREN Statement ELSE {symbolTable.deleteScope(); symbolTable.addConditionalStructure("else");} Statement {symbolTable.deleteScope(); $$ = $4;}
-           | WHILE WhileOpen LPAREN WhileExp RPAREN Statement {symbolTable.removeWhile(); $$ = $6; buffer.bpatch($6->nextList, buffer.genLabel()); buffer.bpatch($6->startLoopList, $2->nextInstruction)}
+           | WHILE WhileOpen LPAREN WhileExp RPAREN Statement {symbolTable.removeWhile(); $6->finishWhile($2->nextInstruction, $4); $$ = $6;}
            | BREAK SC                                      {isInLoop(false); $$ = $1; $$->addBreak();}
            | CONTINUE SC                                   {isInLoop(true);  $$ = $1; $$->addContinue();}
            | SWITCH SwitchOpen LPAREN SwitchExp RPAREN LBRACE CaseList RBRACE {symbolTable.removeSwitch();}
@@ -110,7 +110,7 @@ IfExp: Exp {assertBoolean($1); $$ = $1;}
 WhileOpen: /*epsilon*/ {symbolTable.addConditionalStructure("while"); $$ = new Node(); $$->nextInstruction = buffer.genLabel();}
 ;
 
-WhileExp: Exp {assertBoolean($1); $$ = $1;}
+WhileExp: Exp {assertBoolean($1); $$ = $1; $$->emitWhileExp($1->value);}
 ;
 
 SwitchOpen: /*epsilon*/ {symbolTable.addConditionalStructure("switch");}
@@ -134,7 +134,7 @@ Type:   INT {$$ = $1;}
 
 Exp:    LPAREN Exp RPAREN {$$ = $2;}
         | Exp MINUS Exp {buffer.emit(regAllocator.createArithmeticCode($1, $3, "sub")); $$ = new BinaryArithmeticOp($1, $3); $$->value = regAllocator.getCurrentRegisterName();}
-        | Exp PLUS Exp {buffer.emit(regAllocator.createArithmeticCode($1, $3, "add")); $$ = new BinaryArithmeticOp($1, $3); $$->value = regAllocator.getCurrentRegisterName();}
+        | Exp PLUS Exp {cout << "end plus" << endl; buffer.emit(regAllocator.createArithmeticCode($1, $3, "add")); $$ = new BinaryArithmeticOp($1, $3);$$->value = regAllocator.getCurrentRegisterName();}
         | Exp DEV Exp {buffer.emit(regAllocator.createArithmeticCode($1, $3, "sdiv")); $$ = new BinaryArithmeticOp($1, $3); $$->value = regAllocator.getCurrentRegisterName();}
         | Exp MUL Exp {buffer.emit(regAllocator.createArithmeticCode($1, $3, "mul")); $$ = new BinaryArithmeticOp($1, $3); $$->value = regAllocator.getCurrentRegisterName();}
         | ID {$$ = $1; symbolTable.assertExists($1->id, false); $$->value = regAllocator.getVarRegister($1->id);}
@@ -147,6 +147,7 @@ Exp:    LPAREN Exp RPAREN {$$ = $2;}
         | NOT Exp {$$ = new UnaryLogicOp($2);}
         | Exp AND BoolMarkerM Exp {$$ = new BinaryLogicOp($1, $4, true, $3);}
         | Exp OR  BoolMarkerM Exp {$$ = new BinaryLogicOp($1, $4, false, $3);}
+        | Exp EQUALITY Exp {$$ = new RelOp($1, $3, $2->id);}
         | Exp RELATIONAL Exp {$$ = new RelOp($1, $3, $2->id);}
         //| LPAREN Type RPAREN Exp {}
 ;

@@ -85,7 +85,7 @@ string Node::realtype() {
 string getLlvmType(string type) {
     string llvmType = type;
     if (llvmType == TYPE_VOID) {
-        transform(llvmType.begin(), llvmType.end(), llvmType.begin(), ::tolower);
+        llvmType = "void";
     } else {
         llvmType = "i32";
     }
@@ -116,6 +116,32 @@ void Node::addContinue() {
     this->startLoopList.push_back({jmpInstr, FIRST});
 }
 
+void Node::finishWhile(string whileStartLabel, Node *whileExp) {
+    // backpatch and jump to the start of the loop
+    cout << "finishWhile" << endl;
+    buffer.bpatch(this->startLoopList, whileStartLabel);
+    stringstream code;
+    code << "br %" << whileStartLabel;
+    buffer.emit(code.str());
+    // label the loop exit
+    string whileEndLabel = buffer.genLabel();
+    buffer.bpatch(this->nextList, whileEndLabel);
+    buffer.bpatch(whileExp->falseList, whileEndLabel);
+    buffer.bpatch(whileExp->trueList, whileStartLabel);
+}
+
+void Node::emitWhileExp(string cmpReg) {
+    cout << "emitWhileExp: start" << endl;
+    stringstream code;
+    code << "br i1 " << cmpReg << ", label @, label @";
+    int cmpAddress = buffer.emit(code.str());
+    string whileStartCodeLabel = buffer.genLabel();
+    vector<pair<int,BranchLabelIndex>> v1 = {{cmpAddress, FIRST}};
+    buffer.bpatch(v1, whileStartCodeLabel);
+    this->falseList.push_back({cmpAddress, SECOND});
+    cout << "emitWhileExp: finish" << endl;
+}
+
 void Node::mergeLists(Node *node_a, Node *node_b) {
     cout << "merging lists" << endl;
     this->nextList = buffer.merge(node_a->nextList, node_b->nextList);
@@ -125,6 +151,7 @@ void Node::mergeLists(Node *node_a, Node *node_b) {
 }
 
 void Node::emitCallCode(Node* node) {
+    cout << "start emitCallCode" << endl;
     ExpList* expListNode = nullptr;
     vector<Node *> *expressions = nullptr;
     int size = 0;
@@ -145,6 +172,7 @@ void Node::emitCallCode(Node* node) {
     code << "call " << llvmType << " @" << this->id;
     createLlvmArguments(size, code, expressions);
     buffer.emit(code.str());
+    cout << "finish emitCallCode - " << code.str() << endl;
 }
 
 void Node::emitReturnCode() {
@@ -215,7 +243,7 @@ BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) 
 
 RelOp::RelOp(Node *left, Node *right, string op) {
     // cout<< left->id <<" "<< left->type <<" "<< left->realtype() <<" "<< right->id <<" "<< right->type <<" "<< right->realtype()<<endl;
-    cout << "op = " << op << endl;
+    // cout << "op = " << op << endl;
     if (isNumeric(left->realtype()) && isNumeric(right->realtype())) {
         this->type = TYPE_BOOL;
         this->is_numeric = false;

@@ -71,6 +71,8 @@ public:
     void addBreak();
     void addContinue();
     void mergeLists(Node *node_a, Node *node_b);
+    void finishWhile(string whileStartLabel, Node *whileExp);
+    void emitWhileExp(string cmpReg);
     ~Node() = default;
     string type;
     string id;
@@ -216,7 +218,7 @@ public:
             this->type = TYPE_INT;
         }
         //cout << "type is: " << type << endl;
-        delete exp;
+        //delete exp; todo: maybe avoid all deletes?
     }
     ~NumberExp() = default;
 };

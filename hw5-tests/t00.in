@@ -5,24 +5,17 @@ int func(int x, int y) {
    return y * 5;
 }
 
-bool f() {
-   int x1 = 1;
-   int x2 = 2;
-   int x3 = 3;
-}
-
 void main() {
    int x = 3;
-   int y;
-   int z = x / y;
-   y = x + 5 + 4;
-   y = x - 7;
-   x = 8;
-   y = x * 2;
-
-   byte a = 250b + 250b;
-   x = 250b + 250b;
-   func(x,y);
-   f();
-   return;
+   int y = 8;
+   int z = func(x, y);
+   while(true) {
+       int i = 0;
+       break;
+       continue;
+       while(true) {
+          int j = 5;
+          continue;
+       }
+   }
 }

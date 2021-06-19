@@ -41,7 +41,8 @@ _lparen (\()
 _rparen (\))
 _lbrace (\{)
 _rbrace (\})
-_relop ((\<=)|(\>=)|(\<)|(\>)|(==)|(!=))
+_rel ((\<=)|(\>=)|(\<)|(\>))
+_eq ((==)|(!=))
 _assign (=)
 _mul (\*)
 _dev (\/)
@@ -80,7 +81,8 @@ _comment (\/\/[^\r\n]*(\r|\n|\r\n)?)
 {_rparen} return RPAREN;
 {_lbrace} return LBRACE;
 {_rbrace} return RBRACE;
-{_relop} {yylval = new RelOpExp(yytext); return RELATIONAL;};
+{_eq} {yylval = new RelOpExp(yytext); return EQUALITY;}
+{_rel} {yylval = new RelOpExp(yytext); return RELATIONAL;}
 {_assign} return ASSIGN;
 {_comment} ;
 {_plus} return PLUS;
