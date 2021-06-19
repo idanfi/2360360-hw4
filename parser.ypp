@@ -79,11 +79,11 @@ FormalsList: FormalDecl {$$ = new FormalDeclList($1);}
 FormalDecl: Type ID {$$ = new Node($1->type, $2->id);}
 
 ;
-Statements: Statement {}
-            | Statements Statement {}
+Statements: Statement {$$ = $1;}
+            | Statements Statement {$$->mergeLists($1, $2);}
 
 ;
-Statement: LBRACE BlockOpen Statements RBRACE {symbolTable.deleteScope();}
+Statement: LBRACE BlockOpen Statements RBRACE {symbolTable.deleteScope(); $$ = $3}
            | Type ID SC            {symbolTable.addVariable($2->id, $1->type); $$ = $1; buffer.emit(regAllocator.createRegister($2, "0", INVALID_ID));}
            | Type ID ASSIGN Exp SC {symbolTable.addVariable($2->id, $1->type); buffer.emit(regAllocator.createRegister($2, $4->value, $4->id)); $$ = new AssignOp($2, $4);}
            | ID ASSIGN Exp SC      {symbolTable.assertExists($1->id, false); buffer.emit(regAllocator.createRegister($1, $3->value, $4->id)); $$ = new AssignOp($1, $3);}
@@ -92,9 +92,9 @@ Statement: LBRACE BlockOpen Statements RBRACE {symbolTable.deleteScope();}
            | RETURN Exp SC         {isValidReturn($2->realtype(), true); $$ = $2; $2->emitReturnCode()}
            | IF IfOpenMarker LPAREN IfExp RPAREN Statement {symbolTable.deleteScope(); $$ = $4;}
            | IF IfOpenMarker LPAREN IfExp RPAREN Statement ELSE {symbolTable.deleteScope(); symbolTable.addConditionalStructure("else");} Statement {symbolTable.deleteScope(); $$ = $4;}
-           | WHILE WhileOpen LPAREN WhileExp RPAREN Statement {symbolTable.removeWhile(); $$ = $4;}
-           | BREAK SC                                      {isInLoop(false);}
-           | CONTINUE SC                                   {isInLoop(true);}
+           | WHILE WhileOpen LPAREN WhileExp RPAREN Statement {symbolTable.removeWhile(); $$ = $6; buffer.bpatch($6->nextList, buffer.genLabel()); buffer.bpatch($6->startLoopList, $2->nextInstruction)}
+           | BREAK SC                                      {isInLoop(false); $$ = $1; $$->addBreak();}
+           | CONTINUE SC                                   {isInLoop(true);  $$ = $1; $$->addContinue();}
            | SWITCH SwitchOpen LPAREN SwitchExp RPAREN LBRACE CaseList RBRACE {symbolTable.removeSwitch();}
 ;
 
@@ -107,7 +107,7 @@ IfOpenMarker: /*epsilon*/ {symbolTable.addConditionalStructure("if");}
 IfExp: Exp {assertBoolean($1); $$ = $1;}
 ;
 
-WhileOpen: /*epsilon*/ {symbolTable.addConditionalStructure("while");}
+WhileOpen: /*epsilon*/ {symbolTable.addConditionalStructure("while"); $$ = new Node(); $$->nextInstruction = buffer.genLabel();}
 ;
 
 WhileExp: Exp {assertBoolean($1); $$ = $1;}

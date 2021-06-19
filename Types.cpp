@@ -106,6 +106,24 @@ void createLlvmArguments(int numArguments, stringstream &code, vector<Node *>* e
     code << ")";
 }
 
+void Node::addBreak() {
+    int jmpInstr = buffer.emit("br @");
+    this->nextList.push_back({jmpInstr, FIRST});
+}
+
+void Node::addContinue() {
+    int jmpInstr = buffer.emit("br @");
+    this->startLoopList.push_back({jmpInstr, FIRST});
+}
+
+void Node::mergeLists(Node *node_a, Node *node_b) {
+    cout << "merging lists" << endl;
+    this->nextList = buffer.merge(node_a->nextList, node_b->nextList);
+    this->trueList = buffer.merge(node_a->trueList, node_b->trueList);
+    this->falseList = buffer.merge(node_a->falseList, node_b->falseList);
+    this->startLoopList = buffer.merge(node_a->startLoopList, node_b->startLoopList);
+}
+
 void Node::emitCallCode(Node* node) {
     ExpList* expListNode = nullptr;
     vector<Node *> *expressions = nullptr;
@@ -116,9 +134,15 @@ void Node::emitCallCode(Node* node) {
         expressions = expListNode->getExpressions();
     }
     stringstream code;
-    string llvmType = getLlvmType(symbolTable.getReturnType(this->id));
-    code << "call " << llvmType;
-    code << " " << this->id;
+    string retType = symbolTable.getReturnType(this->id);
+    string llvmType = getLlvmType(retType);
+    // save the function call result if needed
+    if (retType != TYPE_VOID) {
+        string reg = regAllocator.getNextRegisterName();
+        code << reg << " = ";
+        this->value = reg;
+    }
+    code << "call " << llvmType << " @" << this->id;
     createLlvmArguments(size, code, expressions);
     buffer.emit(code.str());
 }

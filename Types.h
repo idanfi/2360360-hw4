@@ -56,7 +56,7 @@ public:
         this->is_valid_numeric_value = false;
         this->numeric_value = -1;
         this->value = "%invalid_value";
-        this->nextInstruction = -1;
+        this->nextInstruction = "-1";
     }
 
     Node(string type, string id) : Node() {
@@ -67,6 +67,9 @@ public:
     string realtype();
     void emitReturnCode();
     void emitCallCode(Node *node);
+    void addBreak();
+    void addContinue();
+    void mergeLists(Node *node_a, Node *node_b);
     ~Node() = default;
     string type;
     string id;
@@ -77,6 +80,7 @@ public:
     vector<pair<int,BranchLabelIndex>> trueList;
     vector<pair<int,BranchLabelIndex>> falseList;
     vector<pair<int,BranchLabelIndex>> nextList;
+    vector<pair<int,BranchLabelIndex>> startLoopList;
     string nextInstruction;
 };
 
@@ -255,6 +259,7 @@ public:
         // can use strings only to call print
         assertCall(exp->id, params);
         this->is_numeric = isNumeric(type);
+        this->value = exp->value;
         delete exp;
         delete params;
     }
