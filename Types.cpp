@@ -111,7 +111,13 @@ void createLlvmArguments(int numArguments, stringstream &code, vector<Node *>* e
             code << "i32";
         }
         if (expressions) {
-            code << " " << regAllocator.getVarRegister((*expressions)[i]->id);
+            string id = (*expressions)[i]->id;
+            string value = (*expressions)[i]->value;
+            if (id != INVALID_ID && symbolTable.exists(id)) {
+                value = regAllocator.getVarRegister(id);
+            }
+
+            code << " " << value;
         }
     }
     code << ")";
@@ -175,7 +181,6 @@ void Node::mergeLists(Node *node_a, Node *node_b) {
 
 void Node::emitCallCode(Node* node) {
     //cout << "start emitCallCode" << endl;
-    // todo: should support numeric and string arguments to functions
     ExpList* expListNode = nullptr;
     vector<Node *> *expressions = nullptr;
     int size = 0;
@@ -185,6 +190,10 @@ void Node::emitCallCode(Node* node) {
         expressions = expListNode->getExpressions();
     }
     stringstream code;
+    if (this->id == "print") {
+        StringExp* s = (StringExp*)((*expressions)[0]);
+        code << s->value << " = getelementptr " << s->str_length << ", " << s->str_length << "* " << s->var << ", i32 0, i32 0" << endl;
+    }
     string retType = symbolTable.getReturnType(this->id);
     string llvmType = getLlvmType(retType);
     // save the function call result if needed
@@ -224,7 +233,7 @@ BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) 
     right->loadExp();
     if (isAnd) {
         buffer.bpatch(left->trueList, marker->nextInstruction);
-        // todo: implement
+        // todo: implement (after or is working).
         this->trueList = right->trueList;
         this->falseList = buffer.merge(left->falseList, right->falseList);
     } else { // or op
@@ -307,4 +316,14 @@ void CaseList::emitCase(vector<pair<int, BranchLabelIndex>> &nextList, string sw
     // backpatch all the break in the switch
     buffer.bpatch(this->nextList, afterSwitchLabel);
     buffer.bpatch(v1, afterSwitchLabel);
+}
+
+StringExp::StringExp(string _str) {
+    this->type = TYPE_STRING;
+    this->id = _str;
+    string string_var = regAllocator.createStringConstant();
+    this->value = "%" + string_var;
+    this->var = "@." + string_var;
+    this-> str_length = "[" + to_string(_str.length() - 1) + " x i8]";
+    buffer.emitGlobal(this->var + " = constant " + this->str_length + "c" + _str.replace(_str.length() - 1, 1, "\\00\""));
 }

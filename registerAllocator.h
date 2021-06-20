@@ -17,6 +17,7 @@ private:
     unsigned int counter;
     unordered_map<string, string> varToRegMapping;
     unordered_map<string, string> varToStackMap;
+    int string_counter;
     string getVarStackReg(string var);
 public:
     string getNextRegisterName(int increment = 1) {
@@ -25,7 +26,13 @@ public:
         s1 << "%t" << this->counter;
         return s1.str();
     }
-    RegisterAllocator() : counter(0) {}
+    string createStringConstant(int increment = 1) {
+        stringstream s1;
+        s1 << "w" << this->string_counter;
+        this->string_counter += increment;
+        return s1.str();
+    }
+    RegisterAllocator() : counter(0), string_counter(0) {}
     void createRegister(Node *node, string value, string id);
     string getCurrentRegisterName() {
         return getNextRegisterName(0);

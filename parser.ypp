@@ -141,7 +141,7 @@ Exp:    LPAREN Exp RPAREN {$2->loadExp(); $$ = $2;}
         | Call {$$ = $1;}
         | NUM {$$ = new NumberExp($1);}
         | NUM B {$$ = new NumberExp($1, true);}
-        | STRING {$$ = $1;}
+        | STRING {$$ = $1; }
         | TRUE {$$ = $1; $$->value = "1"; $$->trueList.push_back({buffer.nextInstruction(), FIRST});}
         | FALSE {$$ = $1; $$->value = "0"; $$->falseList.push_back({buffer.nextInstruction(), SECOND});}
         | NOT Exp {$$ = new UnaryLogicOp($2);}
@@ -160,7 +160,7 @@ BoolMarkerN: /* epsilon */ {$$ = new Marker(false);}
 
 CaseList:   CaseDecl CaseList {$$ = $2; ((CaseList *)$$)->addCase($1->id, $1->nextInstruction); $$->mergeLists($1, $2);}
             | CaseDecl {$$ = $1;}
-            | DEFAULT DefaultLabel COLON Statements {$$ = new CaseList(); ((CaseList *)$$)->hasDefault = true; ((CaseList *)$$)->defaultLabel = $2->nextInstruction; $$->nextList = $4->nextList}
+            | DEFAULT DefaultLabel COLON Statements {$$ = new CaseList(); ((CaseList *)$$)->hasDefault = true; ((CaseList *)$$)->defaultLabel = $2->nextInstruction; $$->nextList = $4->nextList;}
 ;
 
 DefaultLabel: /* epsilon */ {$$ = new Node(); $$->nextInstruction = buffer.genLabel();}

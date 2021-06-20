@@ -73,7 +73,7 @@ string RegisterAllocator::createArithmeticCode(Node *left_node, Node *right_node
     }
 
     // write the code
-    if (op == "sdiv" || op == "udiv") {
+    if (op == "sdiv" || op == "udiv") { //TODO: check whether there's need to use also udiv.
         // todo: special treatment for divide by zero
         code << "call void @assertDiv(i32 " << right << ")" << endl;
     }

@@ -229,11 +229,10 @@ public:
 
 class StringExp : public Node {
 public:
-    StringExp(string _str) {
-        this->type = TYPE_STRING;
-        this->id = _str;
-    }
+    StringExp(string _str);
     ~StringExp() = default;
+    string var;
+    string str_length;
 };
 
 class ExpList : public Node {
