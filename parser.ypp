@@ -163,12 +163,12 @@ CaseList:   CaseDecl CaseList {$$ = $2; ((CaseList *)$$)->addCase($1->id, $1->ne
             | DEFAULT DefaultLabel COLON Statements {$$ = new CaseList(); ((CaseList *)$$)->hasDefault = true; ((CaseList *)$$)->defaultLabel = $2->nextInstruction; $$->nextList = $4->nextList;}
 ;
 
-DefaultLabel: /* epsilon */ {$$ = new Node(); $$->nextInstruction = buffer.genLabel();}
+DefaultLabel: /* epsilon */ {$$ = new Node(); $$->emitCaseLabel();}
 
 CaseDecl:   CASE CaseHead NUM COLON Statements {$$ = new CaseList($3->id, $2->nextInstruction); $$->nextList = $5->nextList;}
 ;
 
-CaseHead: /* epsilon */ { $$ = new Node(); $$->nextInstruction = buffer.genLabel();}
+CaseHead: /* epsilon */ { $$ = new Node(); $$->emitCaseLabel();}
 
 %%
 void yyerror(const char*) {errorSyn(yylineno); exit(-1);}

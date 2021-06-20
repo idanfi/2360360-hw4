@@ -75,6 +75,7 @@ public:
     void emitSwitchOpen();
     void emitWhileEnd(string whileStartLabel, Node *whileExp);
     void emitWhileExp(string cmpReg);
+    void emitCaseLabel();
     void loadExp();
     ~Node() = default;
     string type;

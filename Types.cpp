@@ -171,6 +171,18 @@ void Node::emitWhileExp(string cmpReg) {
     //cout << "emitWhileExp: finish" << endl;
 }
 
+void Node::emitCaseLabel() {
+    /*
+     * fix - 'expected instruction opcode' error when there is no 'break' in a case.
+     * https://zanopia.wordpress.com/2010/09/14/understanding-llvm-assembly-with-fractals-part-i/
+     * so right before the case label we add an unconditional jmp to that label.
+     */
+    int labelInstr = buffer.emit("br label @");
+    this->nextInstruction = buffer.genLabel();
+    vector<pair<int,BranchLabelIndex>> v1 = {{labelInstr, FIRST}};
+    buffer.bpatch(v1, this->nextInstruction);
+}
+
 void Node::mergeLists(Node *node_a, Node *node_b) {
     //cout << "merging lists" << endl;
     this->nextList = buffer.merge(node_a->nextList, node_b->nextList);

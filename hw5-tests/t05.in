@@ -4,15 +4,14 @@ void main() {
    while (i < 3) {
       switch (i) {
           case 1: {
-             printi(i);
+             print("case 1");
              break;
           }
           case 2: {
-             printi(i);
-             break;
+             print("case 2");
           }
           default: {
-             printi(i);
+             print("default");
           }
       }
       i = i + 1;
