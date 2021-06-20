@@ -349,7 +349,7 @@ public:
         this->type = TYPE_MARKER;
         // todo: should this be the nextList??
         if (isMarkerM) {
-            this->nextInstruction = buffer.genLabel();
+            this->nextInstruction = buffer.genLabelNextLine();
         } else {
             this->nextList.push_back({buffer.nextInstruction(), FIRST});
             buffer.emit("br label @");

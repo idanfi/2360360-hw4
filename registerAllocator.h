@@ -38,8 +38,11 @@ public:
         return getNextRegisterName(0);
     }
     string createArithmeticCode(Node *left_node, Node *right_node, string op);
-    string getVarRegister(string var) {
-        return this->varToRegMapping[var];
+    string getVarRegister(string var, string value_if_not_found) {
+        if (var != INVALID_ID && symbolTable.exists(var)) {
+            return this->varToRegMapping[var];
+        }
+        return value_if_not_found;
     }
     void addVariable(int position, const string& varName) {
         stringstream reg;

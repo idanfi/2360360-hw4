@@ -125,3 +125,11 @@ void CodeBuffer::preprocess() {
 int CodeBuffer::nextInstruction() {
     return buffer.size();
 }
+
+string CodeBuffer::genLabelNextLine() {
+    int jmpInstr = emit("br label @");
+    string nextInstr = genLabel();
+    vector<pair<int,BranchLabelIndex>> v1 = {{jmpInstr, FIRST}};
+    bpatch(v1, nextInstr);
+    return nextInstr;
+}

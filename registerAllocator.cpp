@@ -24,9 +24,7 @@ void RegisterAllocator::createRegister(Node *node, string value, string id) {
     string registerName = getNextRegisterName();
     code << registerName << " = ";
     string type = node->realtype(); // todo: should it be type of realtype?
-    if (id != INVALID_ID && symbolTable.exists(id)) {
-        value = this->getVarRegister(id);
-    }
+    value = this->getVarRegister(id, value);
     if (type == TYPE_INT) {
         code << "add i32 " << value << ", 0";
     } else if (type == TYPE_BYTE) {

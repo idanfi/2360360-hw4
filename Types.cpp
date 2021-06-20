@@ -112,10 +112,7 @@ void createLlvmArguments(int numArguments, stringstream &code, vector<Node *>* e
         }
         if (expressions) {
             string id = (*expressions)[i]->id;
-            string value = (*expressions)[i]->value;
-            if (id != INVALID_ID && symbolTable.exists(id)) {
-                value = regAllocator.getVarRegister(id);
-            }
+            string value = regAllocator.getVarRegister(id, (*expressions)[i]->value);
 
             code << " " << value;
         }
@@ -134,10 +131,7 @@ void Node::addContinue() {
 }
 
 void Node::emitWhileOpen() {
-    int jmpInstr = buffer.emit("br label @");
-    this->nextInstruction = buffer.genLabel();
-    vector<pair<int,BranchLabelIndex>> v1 = {{jmpInstr, FIRST}};
-    buffer.bpatch(v1, this->nextInstruction);
+    this->nextInstruction = buffer.genLabelNextLine();
 }
 
 void Node::emitSwitchOpen() {
@@ -177,10 +171,7 @@ void Node::emitCaseLabel() {
      * https://zanopia.wordpress.com/2010/09/14/understanding-llvm-assembly-with-fractals-part-i/
      * so right before the case label we add an unconditional jmp to that label.
      */
-    int labelInstr = buffer.emit("br label @");
-    this->nextInstruction = buffer.genLabel();
-    vector<pair<int,BranchLabelIndex>> v1 = {{labelInstr, FIRST}};
-    buffer.bpatch(v1, this->nextInstruction);
+    this->nextInstruction = buffer.genLabelNextLine();
 }
 
 void Node::mergeLists(Node *node_a, Node *node_b) {
@@ -223,12 +214,8 @@ void Node::emitCallCode(Node* node) {
 void Node::emitReturnCode() {
     stringstream code;
     string reg;
-    code << "ret ";
-    if (this->id != INVALID_ID) {
-        reg = regAllocator.getVarRegister(this->id);
-    } else {
-        reg = this->value;
-    }
+    code << "ret i32 ";
+    reg = regAllocator.getVarRegister(this->id, this->value);
     code << reg;
     buffer.emit(code.str());
 }
@@ -244,28 +231,33 @@ BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) 
     left->loadExp();
     right->loadExp();
     if (isAnd) {
+        //buffer.emit("AND");
         buffer.bpatch(left->trueList, marker->nextInstruction);
         // todo: implement (after or is working).
         this->trueList = right->trueList;
         this->falseList = buffer.merge(left->falseList, right->falseList);
     } else { // or op
+        //buffer.emit("OR");
         buffer.bpatch(left->falseList, marker->nextInstruction);
         this->trueList = buffer.merge(left->trueList, right->trueList);
         this->falseList = right->falseList;
         // check for short circuit evaluation
-        string compReg = regAllocator.getNextRegisterName();
+        string compRegI1 = regAllocator.getNextRegisterName();
         stringstream code;
-        code << compReg << " = icmp ne i32 " << regAllocator.getVarRegister(left->id) << ", 0";
+        code << compRegI1 << " = icmp ne i32 " << regAllocator.getVarRegister(left->id, left->value) << ", 0";
         buffer.emit(code.str());
         stringstream code2;
-        code2 << "br i1 " << compReg << ", label @, label @";
+        code2 << "br i1 " << compRegI1 << ", label @, label @"; //TODO: seems that bp switch 1,2.
         int brInstr = buffer.emit(code2.str());
 
         // the false label
-        string label = buffer.genLabel();
-        compReg = regAllocator.getNextRegisterName();
+
+        string label = buffer.genLabelNextLine();
+        compRegI1 = regAllocator.getNextRegisterName();
+        string compReg = regAllocator.getNextRegisterName();
         stringstream code3;
-        code3 << compReg << " = icmp ne i32 " << regAllocator.getVarRegister(left->id) << ", 0";
+        code3 << compRegI1 << " = icmp ne i32 " << regAllocator.getVarRegister(right->id, right->value) << ", 0" << endl;
+        code3 << compReg << " = zext i1 " << compRegI1 << " to i32";
         buffer.emit(code3.str());
         int jmpInstr = buffer.emit("br label @");
 
@@ -273,11 +265,11 @@ BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) 
         string label2 = buffer.genLabel();
         stringstream code4;
         string resReg = regAllocator.getNextRegisterName();
-        code4 << resReg << " phi i1 [true @], [" << compReg << ", @]";
+        code4 << resReg << " = phi i32 [1, @], [" << compReg << ", @]";
         int phiInstr = buffer.emit(code4.str());
-        vector<pair<int,BranchLabelIndex>> v1 = {{brInstr, SECOND}, {jmpInstr, FIRST}, {phiInstr, SECOND}};
+        vector<pair<int,BranchLabelIndex>> v1 = {{brInstr, FIRST}, {jmpInstr, FIRST}};
         buffer.bpatch(v1, label2);
-        vector<pair<int,BranchLabelIndex>> v2 = {{brInstr, FIRST}};
+        vector<pair<int,BranchLabelIndex>> v2 = {{brInstr, SECOND}, {phiInstr, SECOND}};
         buffer.bpatch(v2, label);
         vector<pair<int,BranchLabelIndex>> v3 = {{phiInstr, FIRST}};
         buffer.bpatch(v3, marker->nextInstruction);

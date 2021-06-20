@@ -137,7 +137,7 @@ Exp:    LPAREN Exp RPAREN {$2->loadExp(); $$ = $2;}
         | Exp PLUS Exp {buffer.emit(regAllocator.createArithmeticCode($1, $3, "add")); $$ = new BinaryArithmeticOp($1, $3);$$->value = regAllocator.getCurrentRegisterName();}
         | Exp DEV Exp {buffer.emit(regAllocator.createArithmeticCode($1, $3, "sdiv")); $$ = new BinaryArithmeticOp($1, $3); $$->value = regAllocator.getCurrentRegisterName();}
         | Exp MUL Exp {buffer.emit(regAllocator.createArithmeticCode($1, $3, "mul")); $$ = new BinaryArithmeticOp($1, $3); $$->value = regAllocator.getCurrentRegisterName();}
-        | ID {$$ = $1; symbolTable.assertExists($1->id, false); $$->value = regAllocator.getVarRegister($1->id);}
+        | ID {$$ = $1; symbolTable.assertExists($1->id, false); $$->value = regAllocator.getVarRegister($1->id, $$->value);}
         | Call {$$ = $1;}
         | NUM {$$ = new NumberExp($1);}
         | NUM B {$$ = new NumberExp($1, true);}
@@ -146,7 +146,7 @@ Exp:    LPAREN Exp RPAREN {$2->loadExp(); $$ = $2;}
         | FALSE {$$ = $1; $$->value = "0"; $$->falseList.push_back({buffer.nextInstruction(), SECOND});}
         | NOT Exp {$$ = new UnaryLogicOp($2);}
         | Exp AND BoolMarkerM Exp {$$ = new BinaryLogicOp($1, $4, true, $3);}
-        | Exp OR  BoolMarkerM Exp {$$ = new BinaryLogicOp($1, $4, false, $3);}
+        | Exp OR BoolMarkerM Exp {$$ = new BinaryLogicOp($1, $4, false, $3);}
         | Exp EQUALITY Exp {$$ = new RelOp($1, $3, $2->id);}
         | Exp RELATIONAL Exp {$$ = new RelOp($1, $3, $2->id);}
         //| LPAREN Type RPAREN Exp {}
