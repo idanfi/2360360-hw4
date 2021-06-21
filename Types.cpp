@@ -222,14 +222,12 @@ void Node::emitReturnCode() {
 
 BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) {
     if (left->realtype() == TYPE_BOOL && right->realtype() == TYPE_BOOL) {
-        cout << "both are bool." << endl;
         this->type = TYPE_BOOL;
         this->is_numeric = false;
     } else {
         errorMismatch(yylineno);
         exit(-1);
     }
-    cout << "passed bool check." << endl;
     if (isAnd) {
         //buffer.emit("AND");
         buffer.bpatch(left->trueList, marker->nextInstruction);

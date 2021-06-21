@@ -102,9 +102,11 @@ string RegisterAllocator::emitCmpCode(string left, string right, string op) {
     } else if (op == ">=") {
         code << "sge ";
     }
-    code << "i32 " << left << ", " << right;
+    code << "i32 " << left << ", " << right << endl;
+    string regI32 = this->getNextRegisterName();
+    code << regI32 << " = zext i1 " << reg << " to i32";
     buffer.emit(code.str());
-    return reg;
+    return regI32;
 }
 
 void RegisterAllocator::funcionEpilog() {
