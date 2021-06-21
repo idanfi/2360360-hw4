@@ -259,10 +259,50 @@ BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) 
     }
     if (isAnd) {
         //buffer.emit("AND");
-        buffer.bpatch(left->trueList, marker->nextInstruction);
-        // todo: implement (after or is working).
+        int rightJmpInstr = buffer.emit("br label @");
+        string rightLabel = buffer.genLabel();
+        buffer.bpatch(marker->nextList, rightLabel);
+        buffer.bpatch(left->falseList, rightLabel);
         this->trueList = right->trueList;
         this->falseList = buffer.merge(left->falseList, right->falseList);
+        // check for short circuit evaluation
+        string compRegI1 = regAllocator.getNextRegisterName();
+        stringstream code;
+        left->loadExp();
+        code << compRegI1 << " = icmp eq i32 " << regAllocator.getVarRegister(left->id, left->value) << ", 0";
+        buffer.emit(code.str());
+        stringstream code2;
+        code2 << "br i1 " << compRegI1 << ", label @, label @";
+        int brInstr = buffer.emit(code2.str());
+
+        // the false label
+
+        string label = buffer.genLabelNextLine();
+        compRegI1 = regAllocator.getNextRegisterName();
+        string compReg = regAllocator.getNextRegisterName();
+        stringstream code3;
+        right->loadExp();
+        code3 << compRegI1 << " = icmp ne i32 " << regAllocator.getVarRegister(right->id, right->value) << ", 0" << endl;
+        code3 << compReg << " = zext i1 " << compRegI1 << " to i32";
+        buffer.emit(code3.str());
+        int jmpInstr = buffer.emit("br label @");
+
+        // end of short circuit evaluation, create the phi command and backpatch all
+        string label2 = buffer.genLabel();
+        stringstream code4;
+        string resReg = regAllocator.getNextRegisterName();
+        code4 << resReg << " = phi i32 [0, @], [" << compReg << ", @]";
+        int phiInstr = buffer.emit(code4.str());
+        vector<pair<int,BranchLabelIndex>> v1 = {{brInstr, FIRST}, {jmpInstr, FIRST}};
+        buffer.bpatch(v1, label2);
+        vector<pair<int,BranchLabelIndex>> v2 = {{phiInstr, SECOND}, {rightJmpInstr, FIRST}};
+        buffer.bpatch(v2, label);
+        vector<pair<int,BranchLabelIndex>> v3 = {{phiInstr, FIRST}};
+        buffer.bpatch(v3, rightLabel);
+        vector<pair<int,BranchLabelIndex>> v4 = {{brInstr, SECOND}};
+        buffer.bpatch(v4, marker->nextInstruction);
+        // update the result value to be the last register
+        this->value = resReg;
     } else { // or op
         //buffer.emit("OR");
         int rightJmpInstr = buffer.emit("br label @");
