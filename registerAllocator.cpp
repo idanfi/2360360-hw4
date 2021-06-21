@@ -141,8 +141,13 @@ void RegisterAllocator::storeVar(string var, string value) {
 
 string RegisterAllocator::loadVar(string var) {
     string stackReg = this->varToStackMap[var];
-    string new_reg = this->getNextRegisterName();
-    buffer.emit(new_reg + " = load i32, i32* " + stackReg);
-    this->varToRegMapping[var] = new_reg;
-    return new_reg;
+    if (stackReg != "") {
+        string new_reg = this->getNextRegisterName();
+        buffer.emit(new_reg + " = load i32, i32* " + stackReg);
+        this->varToRegMapping[var] = new_reg;
+        return new_reg;
+    }
+    else {
+        return this->varToRegMapping[var];
+    }
 }
