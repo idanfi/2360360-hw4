@@ -268,8 +268,8 @@ public:
         assertCall(exp->id, params);
         this->is_numeric = isNumeric(type);
         this->value = exp->value;
-        delete exp;
-        delete params;
+        //delete exp;
+        //delete params;
     }
     ~CallOp() = default;
 
@@ -349,7 +349,10 @@ public:
         this->type = TYPE_MARKER;
         // todo: should this be the nextList??
         if (isMarkerM) {
-            this->nextInstruction = buffer.genLabelNextLine();
+            //this->nextInstruction = buffer.genLabelNextLine();
+            int jmpInstr = buffer.emit("br label @");
+            this->nextInstruction = buffer.genLabel();
+            this->nextList.push_back({jmpInstr, FIRST});
         } else {
             this->nextList.push_back({buffer.nextInstruction(), FIRST});
             buffer.emit("br label @");

@@ -222,14 +222,14 @@ void Node::emitReturnCode() {
 
 BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) {
     if (left->realtype() == TYPE_BOOL && right->realtype() == TYPE_BOOL) {
+        cout << "both are bool." << endl;
         this->type = TYPE_BOOL;
         this->is_numeric = false;
     } else {
         errorMismatch(yylineno);
         exit(-1);
     }
-    left->loadExp();
-    right->loadExp();
+    cout << "passed bool check." << endl;
     if (isAnd) {
         //buffer.emit("AND");
         buffer.bpatch(left->trueList, marker->nextInstruction);
@@ -238,12 +238,16 @@ BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) 
         this->falseList = buffer.merge(left->falseList, right->falseList);
     } else { // or op
         //buffer.emit("OR");
-        buffer.bpatch(left->falseList, marker->nextInstruction);
+        int rightJmpInstr = buffer.emit("br label @");
+        string rightLabel = buffer.genLabel();
+        buffer.bpatch(marker->nextList, rightLabel);
+        buffer.bpatch(left->falseList, rightLabel);
         this->trueList = buffer.merge(left->trueList, right->trueList);
         this->falseList = right->falseList;
         // check for short circuit evaluation
         string compRegI1 = regAllocator.getNextRegisterName();
         stringstream code;
+        left->loadExp();
         code << compRegI1 << " = icmp ne i32 " << regAllocator.getVarRegister(left->id, left->value) << ", 0";
         buffer.emit(code.str());
         stringstream code2;
@@ -256,6 +260,7 @@ BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) 
         compRegI1 = regAllocator.getNextRegisterName();
         string compReg = regAllocator.getNextRegisterName();
         stringstream code3;
+        right->loadExp();
         code3 << compRegI1 << " = icmp ne i32 " << regAllocator.getVarRegister(right->id, right->value) << ", 0" << endl;
         code3 << compReg << " = zext i1 " << compRegI1 << " to i32";
         buffer.emit(code3.str());
@@ -269,10 +274,12 @@ BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) 
         int phiInstr = buffer.emit(code4.str());
         vector<pair<int,BranchLabelIndex>> v1 = {{brInstr, FIRST}, {jmpInstr, FIRST}};
         buffer.bpatch(v1, label2);
-        vector<pair<int,BranchLabelIndex>> v2 = {{brInstr, SECOND}, {phiInstr, SECOND}};
+        vector<pair<int,BranchLabelIndex>> v2 = {{phiInstr, SECOND}, {rightJmpInstr, FIRST}};
         buffer.bpatch(v2, label);
         vector<pair<int,BranchLabelIndex>> v3 = {{phiInstr, FIRST}};
-        buffer.bpatch(v3, marker->nextInstruction);
+        buffer.bpatch(v3, rightLabel);
+        vector<pair<int,BranchLabelIndex>> v4 = {{brInstr, SECOND}};
+        buffer.bpatch(v4, marker->nextInstruction);
         // update the result value to be the last register
         this->value = resReg;
     }
