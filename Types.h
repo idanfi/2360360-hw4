@@ -76,6 +76,9 @@ public:
     void emitWhileEnd(string whileStartLabel, Node *whileExp);
     void emitWhileExp(string cmpReg);
     void emitCaseLabel();
+    void emitIfCode();
+    void emitElseCode();
+    void bpatchIf(string trueLabel, string falseLabel);
     void loadExp();
     ~Node() = default;
     string type;

@@ -156,7 +156,9 @@ void Node::emitWhileEnd(string whileStartLabel, Node *whileExp) {
 void Node::emitWhileExp(string cmpReg) {
     //cout << "emitWhileExp: start" << endl;
     stringstream code;
-    code << "br i1 " << cmpReg << ", label @, label @";
+    string whileExpReg = regAllocator.getNextRegisterName();
+    code << whileExpReg << " = " << "trunc i32 " << cmpReg << " to i1" << endl;
+    code << "br i1 " << whileExpReg << ", label @, label @";
     int cmpAddress = buffer.emit(code.str());
     string whileStartCodeLabel = buffer.genLabel();
     vector<pair<int,BranchLabelIndex>> v1 = {{cmpAddress, FIRST}};
@@ -218,6 +220,33 @@ void Node::emitReturnCode() {
     reg = regAllocator.getVarRegister(this->id, this->value);
     code << reg;
     buffer.emit(code.str());
+}
+
+void Node::emitIfCode() {
+    // check if the bool is true or false
+    string ifReg = regAllocator.getNextRegisterName();
+    string code = ifReg + " = icmp ne i32 0, " + this->value;
+    buffer.emit(code);
+    // emit the branch instruction
+    code = "br i1 " + ifReg + ", label @, label @";
+    int ifInstr = buffer.emit(code);
+    this->trueList.push_back({ifInstr, FIRST});
+    this->falseList.push_back({ifInstr, SECOND});
+}
+
+void Node::bpatchIf(string trueLabel, string falseLabel) {
+    buffer.bpatch(this->trueList, trueLabel);
+    this->trueList.clear();
+    buffer.bpatch(this->falseList, falseLabel);
+    this->falseList.clear();
+}
+
+void Node::emitElseCode() {
+    // jmp from the end of the if
+    int jmpInstr = buffer.emit("br label @");
+    // mark the start of the else code
+    this->nextInstruction = buffer.genLabelNextLine();
+    this->nextList.push_back({jmpInstr, FIRST});
 }
 
 BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) {

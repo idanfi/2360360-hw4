@@ -90,13 +90,15 @@ Statement: LBRACE BlockOpen Statements RBRACE {symbolTable.deleteScope(); $$ = $
            | Call SC               {$$ = $1;}
            | RETURN SC             {isValidReturn(TYPE_VOID, false); $$ = new TypeExp(TYPE_VOID); buffer.emit("ret void");}
            | RETURN Exp SC         {isValidReturn($2->realtype(), true); $2->loadExp(); $2->emitReturnCode(); $$ = $2;}
-           | IF IfOpenMarker LPAREN IfExp RPAREN Statement {symbolTable.deleteScope(); $$ = $4;}
-           | IF IfOpenMarker LPAREN IfExp RPAREN Statement ELSE {symbolTable.deleteScope(); symbolTable.addConditionalStructure("else");} Statement {symbolTable.deleteScope(); $$ = $4;}
-           | WHILE WhileOpen LPAREN WhileExp RPAREN Statement {symbolTable.removeWhile(); $6->emitWhileEnd($2->nextInstruction, $4); $$ = $6;}
+           | IF IfOpenMarker LPAREN IfExp RPAREN Statement {symbolTable.deleteScope(); $$ = $4; $$->bpatchIf($4->nextInstruction, buffer.genLabelNextLine());}
+           | IF IfOpenMarker LPAREN IfExp RPAREN Statement Else Statement {symbolTable.deleteScope(); $$ = $4; $$->bpatchIf($4->nextInstruction, $7->nextInstruction); buffer.bpatch($7->nextList, buffer.genLabelNextLine())}
+           | WHILE WhileOpen LPAREN WhileExp RPAREN Statement {symbolTable.removeWhile(); $6->emitWhileEnd($2->nextInstruction, $4); $$ = $6; }
            | BREAK SC                                      {isInLoop(false); $$ = $1; $$->addBreak();}
            | CONTINUE SC                                   {isInLoop(true);  $$ = $1; $$->addContinue();}
            | SWITCH SwitchOpen LPAREN SwitchExp RPAREN LBRACE CaseList RBRACE {symbolTable.removeSwitch(); ((CaseList *)$7)->emitCase($4->nextList, $4->value);}
 ;
+
+Else : ELSE {symbolTable.deleteScope(); symbolTable.addConditionalStructure("else"); $$ = new Node(); $$->emitElseCode();}
 
 BlockOpen: /*epsilon*/ {symbolTable.createScope();}
 ;
@@ -104,7 +106,7 @@ BlockOpen: /*epsilon*/ {symbolTable.createScope();}
 IfOpenMarker: /*epsilon*/ {symbolTable.addConditionalStructure("if");}
 ;
 
-IfExp: Exp {assertBoolean($1); $1->loadExp(); $$ = $1;}
+IfExp: Exp {assertBoolean($1); $1->loadExp(); $$ = $1; $$->emitIfCode(); $$->nextInstruction = buffer.genLabel();}
 ;
 
 WhileOpen: /*epsilon*/ {symbolTable.addConditionalStructure("while"); $$ = new Node(); $$->emitWhileOpen();}
