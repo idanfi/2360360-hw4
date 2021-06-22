@@ -30,7 +30,8 @@ void RegisterAllocator::createRegister(Node *node, string value, string id) {
     } else if (type == TYPE_BYTE) {
         code << "trunc i32 " << replace(value,"b", "") << " to i8" << endl;
         string curr_reg = this->getCurrentRegisterName();
-        code << this->getNextRegisterName() << " = " << "zext i8 " << curr_reg << " to i32";
+        registerName = this->getNextRegisterName();
+        code << registerName << " = " << "zext i8 " << curr_reg << " to i32";
     } else if (type == TYPE_BOOL) {
         code << "add i32 0, " << value;
     } else { // should never happen todo: remove
