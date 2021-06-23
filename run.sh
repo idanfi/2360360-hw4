@@ -1,7 +1,7 @@
 #!/bin/bash
 
 dos2unix -q hw5-tests/*
-for t in {1..21}
+for t in {1..25}
 do ./run_test.sh $t
 done
 
