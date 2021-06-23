@@ -95,7 +95,7 @@ Statement: LBRACE BlockOpen Statements RBRACE {symbolTable.deleteScope(); $$ = $
            | WHILE WhileOpen LPAREN WhileExp RPAREN Statement {symbolTable.removeWhile(); $6->emitWhileEnd($2->nextInstruction, $4); $$ = $6; }
            | BREAK SC                                      {isInLoop(false); $$ = $1; $$->addBreak();}
            | CONTINUE SC                                   {isInLoop(true);  $$ = $1; $$->addContinue();}
-           | SWITCH SwitchOpen LPAREN SwitchExp RPAREN LBRACE CaseList RBRACE {symbolTable.removeSwitch(); ((CaseList *)$7)->emitCase($4->nextList, $4->value);}
+           | SWITCH SwitchOpen LPAREN SwitchExp RPAREN LBRACE CaseList RBRACE {symbolTable.removeSwitch(); ((CaseList *)$7)->emitCase($4->nextList, $4->value); $$ = $7;}
 ;
 
 Else : ELSE {symbolTable.deleteScope(); symbolTable.addConditionalStructure("else"); $$ = new Node(); $$->emitElseCode();}
@@ -166,7 +166,7 @@ CaseList:   CaseDecl CaseList {$$ = $2; ((CaseList *)$$)->addCase($1->id, $1->ne
 
 DefaultLabel: /* epsilon */ {$$ = new Node(); $$->emitCaseLabel();}
 
-CaseDecl:   CASE CaseHead NUM COLON Statements {$$ = new CaseList($3->id, $2->nextInstruction); $$->nextList = $5->nextList;}
+CaseDecl:   CASE CaseHead NUM COLON Statements {$$ = new CaseList($3->id, $2->nextInstruction); $$->nextList = $5->nextList; $$->startLoopList = $5->startLoopList;}
 ;
 
 CaseHead: /* epsilon */ { $$ = new Node(); $$->emitCaseLabel();}
