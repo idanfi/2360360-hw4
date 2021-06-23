@@ -405,3 +405,21 @@ StringExp::StringExp(string _str) {
     this-> str_length = "[" + to_string(_str.length() - 1) + " x i8]";
     buffer.emitGlobal(this->var + " = constant " + this->str_length + "c" + _str.replace(_str.length() - 1, 1, "\\00\""));
 }
+
+UnaryLogicOp::UnaryLogicOp(Node *exp) {
+    exp->loadExp();
+    string type = exp->realtype();
+        if (type == TYPE_BOOL) {
+        this->type = TYPE_BOOL;
+        this->is_numeric = false;
+    } else {
+        //cout << "UnaryLogicOp: found type of " << type << endl;
+        errorMismatch(yylineno);
+        exit(-1);
+    }
+    this->value = regAllocator.getNextRegisterName();
+    buffer.emit(this->value + " = sub i32 1, " + exp->value);
+    this->trueList = exp->falseList;
+    this->falseList = exp->trueList;
+    delete exp;
+}

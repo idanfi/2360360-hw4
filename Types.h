@@ -111,21 +111,7 @@ public:
 // unary logic operator - "not" .
 class UnaryLogicOp : public Node {
 public:
-    UnaryLogicOp(Node *exp) {
-        exp->loadExp();
-        string type = exp->realtype();
-        if (type == TYPE_BOOL) {
-            this->type = TYPE_BOOL;
-            this->is_numeric = false;
-        } else {
-            //cout << "UnaryLogicOp: found type of " << type << endl;
-            errorMismatch(yylineno);
-            exit(-1);
-        }
-        this->trueList = exp->falseList;
-        this->falseList = exp->trueList;
-        delete exp;
-    }
+    UnaryLogicOp(Node *exp);
     ~UnaryLogicOp() = default;
 };
 

@@ -137,8 +137,10 @@ void RegisterAllocator::functionProlog() {
 
 void RegisterAllocator::storeVar(string var, string value) {
     string stackReg = functionGetVarReg(var);
-    string code = "store i32 " + value + ", i32* " + stackReg;
-    buffer.emit(code);
+    if (stackReg != "") {
+        string code = "store i32 " + value + ", i32* " + stackReg;
+        buffer.emit(code);
+    }
 }
 
 string RegisterAllocator::loadVar(string var) {

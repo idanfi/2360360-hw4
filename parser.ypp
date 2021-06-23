@@ -157,8 +157,7 @@ Exp:    LPAREN Exp RPAREN {$2->loadExp(); $$ = $2;}
 BoolMarkerM: /* epsilon */ {$$ = new Marker(true);}
 ;
 
-BoolMarkerN: /* epsilon */ {$$ = new Marker(false);}
-;
+//BoolMarkerN: /* epsilon */ {$$ = new Marker(false);};
 
 CaseList:   CaseDecl CaseList {$$ = $2; ((CaseList *)$$)->addCase($1->id, $1->nextInstruction); $$->mergeLists($1, $2);}
             | CaseDecl {$$ = $1;}
