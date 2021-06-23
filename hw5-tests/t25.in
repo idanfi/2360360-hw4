@@ -14,7 +14,7 @@ void main()
         while(z < x * y) {
             z = z + y;
             printi(z);
-            if ((z / 3 == 0) and (z / 5 == 0))
+            if (z / 3 == 0 and z / 5 == 0)
                 break;
             else {
                 if (z / 2 == 0) {

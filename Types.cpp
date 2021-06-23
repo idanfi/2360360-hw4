@@ -179,8 +179,8 @@ void Node::emitCaseLabel() {
 void Node::mergeLists(Node *node_a, Node *node_b) {
     // cout << "merging lists" << endl;
     this->nextList = buffer.merge(node_a->nextList, node_b->nextList);
-    this->trueList = buffer.merge(node_a->trueList, node_b->trueList);
-    this->falseList = buffer.merge(node_a->falseList, node_b->falseList);
+    //this->trueList = buffer.merge(node_a->trueList, node_b->trueList);
+    //this->falseList = buffer.merge(node_a->falseList, node_b->falseList);
     this->startLoopList = buffer.merge(node_a->startLoopList, node_b->startLoopList);
 }
 
