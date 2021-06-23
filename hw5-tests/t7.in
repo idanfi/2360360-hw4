@@ -1,26 +1,21 @@
-
-// really dummy test
-int func(int x, int y) {
-   int x1 = 2*y;
-   int y1 = x1;
-   return y1 * 5;
-}
-
+//basic arithmetic (int & byte)
 void main() {
-   int x = 3;
-   int y = 8;
-   int z = func(x, y);
-   printi(z);
-   while(true) {
-       int i = 0;
-       printi(i);
-       break;
-       print("shouldn't get here1");
-       continue;
-       while(true) {
-          int j = 5;
-          print("shouldn't get here2");
-          continue;
-       }
-   }
+    int x;
+    byte y;
+    printi(x+y); //should be 0.
+    //aritmethic with a single operand.
+    printi(x*2b);
+    printi(y*2);
+    printi(255*2b);
+    printi(255b*2);
+    printi(255+255b);
+    printi(255b+255);
+    printi(255b-255);
+    printi(255-255b);
+    printi(x/1b);
+    printi(y/1);
+    printi(8b/2);
+    printi(10/4b);
+    printi(x/x);
+    return;
 }
