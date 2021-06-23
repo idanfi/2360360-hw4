@@ -1,3 +1,4 @@
+//complex boolean operands (tests short circuit evaluation)
 bool printb(int val) {
     printi(val);
     int x;
