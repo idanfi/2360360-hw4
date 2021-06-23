@@ -1,4 +1,5 @@
-//complex boolean operands (tests short circuit evaluation)
+//basic boolean operands (checks short circuit evaluation)
+
 bool printb(int val) {
     printi(val);
     int x;
@@ -15,18 +16,18 @@ bool printb(int val) {
 }
 
 void main() {
-    bool b1 = 1 == 1; //true
-    bool b2 = 1 > 1; // false
-    bool b3 = 1 <= 1; // true
-    bool b4; //false
-    bool y;
-    y = printb(2) or printb(2);
-    y = b1 and printb(1);
-    y = y and printb(0);
-    y = y or printb(2) and printb(1);
-    y = (printb(2) and printb(0)) or (printb(3) and printb(0));
-    y = not y and printb(2);
-    y = (printb(0) or printb(1)) and (printb(0) or printb(3));
+    bool b1 = true;
+    bool b2 = false;
 
+    bool res;
+    res = printb(1) or printb(1);
+    res = printb(2) or printb(0);
+    res = printb(3) or printb(2);
+    res = printb(0) or printb(3);
+
+    res = printb(1) and printb(1);
+    res = printb(2) and printb(0);
+    res = printb(3) and printb(2);
+    res = printb(0) and printb(3);
 
 }

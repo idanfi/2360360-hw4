@@ -1,5 +1,3 @@
-
-// really dummy test
 int func(int x, int y) {
    int x1 = 2*y;
    int y1 = x1;
