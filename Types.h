@@ -78,7 +78,7 @@ public:
     void emitCaseLabel();
     void emitIfCode();
     void emitElseCode();
-    void bpatchIf(string trueLabel, string falseLabel);
+    void bpatchIf(string falseLabel);
     void loadExp();
     ~Node() = default;
     string type;

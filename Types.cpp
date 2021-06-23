@@ -177,7 +177,7 @@ void Node::emitCaseLabel() {
 }
 
 void Node::mergeLists(Node *node_a, Node *node_b) {
-    //cout << "merging lists" << endl;
+    // cout << "merging lists" << endl;
     this->nextList = buffer.merge(node_a->nextList, node_b->nextList);
     this->trueList = buffer.merge(node_a->trueList, node_b->trueList);
     this->falseList = buffer.merge(node_a->falseList, node_b->falseList);
@@ -234,8 +234,8 @@ void Node::emitIfCode() {
     this->falseList.push_back({ifInstr, SECOND});
 }
 
-void Node::bpatchIf(string trueLabel, string falseLabel) {
-    buffer.bpatch(this->trueList, trueLabel);
+void Node::bpatchIf(string falseLabel) {
+    buffer.bpatch(this->trueList, this->nextInstruction);
     this->trueList.clear();
     buffer.bpatch(this->falseList, falseLabel);
     this->falseList.clear();

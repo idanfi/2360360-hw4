@@ -80,7 +80,7 @@ FormalDecl: Type ID {$$ = new Node($1->type, $2->id);}
 
 ;
 Statements: Statement {$$ = $1;}
-            | Statements Statement {$$->mergeLists($1, $2);}
+            | Statements Statement {$$ = $1; $$->mergeLists($1, $2);}
 
 ;
 Statement: LBRACE BlockOpen Statements RBRACE {symbolTable.deleteScope(); $$ = $3;}
@@ -90,8 +90,8 @@ Statement: LBRACE BlockOpen Statements RBRACE {symbolTable.deleteScope(); $$ = $
            | Call SC               {$$ = $1;}
            | RETURN SC             {isValidReturn(TYPE_VOID, false); $$ = new TypeExp(TYPE_VOID); buffer.emit("ret void");}
            | RETURN Exp SC         {isValidReturn($2->realtype(), true); $2->loadExp(); $2->emitReturnCode(); $$ = $2;}
-           | IF IfOpenMarker LPAREN IfExp RPAREN Statement {symbolTable.deleteScope(); $$ = $4; $$->bpatchIf($4->nextInstruction, buffer.genLabelNextLine());}
-           | IF IfOpenMarker LPAREN IfExp RPAREN Statement Else Statement {symbolTable.deleteScope(); $$ = $4; $$->bpatchIf($4->nextInstruction, $7->nextInstruction); buffer.bpatch($7->nextList, buffer.genLabelNextLine());}
+           | IF IfOpenMarker LPAREN IfExp RPAREN Statement {symbolTable.deleteScope(); $4->bpatchIf(buffer.genLabelNextLine()); $$ = $6;}
+           | IF IfOpenMarker LPAREN IfExp RPAREN Statement Else Statement {symbolTable.deleteScope(); $4->bpatchIf($7->nextInstruction); buffer.bpatch($7->nextList, buffer.genLabelNextLine()); $$ = $6; $$->mergeLists($6, $8);}
            | WHILE WhileOpen LPAREN WhileExp RPAREN Statement {symbolTable.removeWhile(); $6->emitWhileEnd($2->nextInstruction, $4); $$ = $6; }
            | BREAK SC                                      {isInLoop(false); $$ = $1; $$->addBreak();}
            | CONTINUE SC                                   {isInLoop(true);  $$ = $1; $$->addContinue();}
