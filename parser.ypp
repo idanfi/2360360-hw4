@@ -161,7 +161,7 @@ BoolMarkerM: /* epsilon */ {$$ = new Marker(true);}
 
 CaseList:   CaseDecl CaseList {$$ = $2; ((CaseList *)$$)->addCase($1->id, $1->nextInstruction); $$->mergeLists($1, $2);}
             | CaseDecl {$$ = $1;}
-            | DEFAULT DefaultLabel COLON Statements {$$ = new CaseList(); ((CaseList *)$$)->hasDefault = true; ((CaseList *)$$)->defaultLabel = $2->nextInstruction; $$->nextList = $4->nextList;}
+            | DEFAULT DefaultLabel COLON Statements {$$ = new CaseList(); ((CaseList *)$$)->hasDefault = true; ((CaseList *)$$)->defaultLabel = $2->nextInstruction; $$->nextList = $4->nextList; $$->startLoopList = $4->startLoopList;}
 ;
 
 DefaultLabel: /* epsilon */ {$$ = new Node(); $$->emitCaseLabel();}
