@@ -122,7 +122,7 @@ SwitchExp: Exp {assertAssignableTypes(TYPE_INT, "dummy", $1->realtype(), "dummy"
 ;
 
 Call:   ID LPAREN ExpList RPAREN {$$ = new CallOp($1, (ExpList*)$3); $1->emitCallCode($3); $$->value = $1->value;}
-        | ID LPAREN RPAREN {$$ = new CallOp($1, new ExpList()); $1->emitCallCode(nullptr); }
+        | ID LPAREN RPAREN {$$ = new CallOp($1, new ExpList()); $1->emitCallCode(nullptr); $$->value = $1->value;}
 ;
 
 ExpList:    Exp {$1->loadExp(); $$ = new ExpList($1);}
