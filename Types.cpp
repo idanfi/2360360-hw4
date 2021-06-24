@@ -318,7 +318,7 @@ BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) 
         code << compRegI1 << " = icmp ne i32 " << regAllocator.getVarRegister(left->id, left->value) << ", 0";
         buffer.emit(code.str());
         stringstream code2;
-        code2 << "br i1 " << compRegI1 << ", label @, label @"; //TODO: seems that bp switch 1,2.
+        code2 << "br i1 " << compRegI1 << ", label @, label @";
         int brInstr = buffer.emit(code2.str());
 
         // the false label
@@ -366,7 +366,6 @@ RelOp::RelOp(Node *left, Node *right, string op) {
     }
     left->loadExp();
     right->loadExp();
-    // write to the buffer the operation, and update the value todo: check different types - int vs byte
     this->value = regAllocator.emitCmpCode(left->value, right->value, op);
     delete left;
     delete right;

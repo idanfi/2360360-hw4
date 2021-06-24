@@ -212,7 +212,7 @@ public:
             this->type = TYPE_INT;
         }
         //cout << "type is: " << type << endl;
-        //delete exp; todo: maybe avoid all deletes?
+        //delete exp;
     }
     ~NumberExp() = default;
 };
@@ -234,7 +234,7 @@ public:
         this->expressions = new vector<Node *>;
         addExp(exp);
     }
-    ~ExpList() = default; // todo : should probably delete the pointers in expressions
+    ~ExpList() = default;
     void addExp(Node *exp) {
         this->expressions->insert(this->expressions->begin(), exp);
     }
@@ -300,7 +300,7 @@ public:
         this->decls = new vector<IdType>;
         addFormalDecl(exp);
     }
-    ~FormalDeclList() = default; // todo : should probably delete the pointers in expressions
+    ~FormalDeclList() = default;
     void addFormalDecl(Node *exp) {
         addFormalDecl(exp->id, exp->realtype());
     }
@@ -336,7 +336,6 @@ class Marker : public Node {
 public:
     Marker(bool isMarkerM) {
         this->type = TYPE_MARKER;
-        // todo: should this be the nextList??
         if (isMarkerM) {
             //this->nextInstruction = buffer.genLabelNextLine();
             int jmpInstr = buffer.emit("br label @");
@@ -369,7 +368,7 @@ public:
     unsigned int size() {
         return this->caseList.size();
     }
-    void printCaseList() { //todo: remove. this is for debug
+    void printCaseList() { // this is for debug
         cout << "hasDefault = " << this->hasDefault << endl;
         for (auto it = this->caseList.begin(); it != this->caseList.end(); ++it) {
             cout << "case : "<< (*it).first << " with label: " << (*it).second << endl;

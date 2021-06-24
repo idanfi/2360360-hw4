@@ -23,7 +23,7 @@ void RegisterAllocator::createRegister(Node *node, string value, string id) {
     bool needStore = false;
     string registerName = getNextRegisterName();
     code << registerName << " = ";
-    string type = node->realtype(); // todo: should it be type of realtype?
+    string type = node->realtype();
     value = this->getVarRegister(id, value);
     if (type == TYPE_INT) {
         code << "add i32 " << value << ", 0";
@@ -34,9 +34,6 @@ void RegisterAllocator::createRegister(Node *node, string value, string id) {
         code << registerName << " = " << "zext i8 " << curr_reg << " to i32";
     } else if (type == TYPE_BOOL) {
         code << "add i32 0, " << value;
-    } else { // should never happen todo: remove
-        cout << "ERROR: invalid type: " << type << " with value = " << value << endl;
-        exit(-1);
     }
     // update the register mapping
     // cout << "working on " << node->id << " type " << node->type << endl;
@@ -72,7 +69,7 @@ string RegisterAllocator::createArithmeticCode(Node *left_node, Node *right_node
     }
 
     // write the code
-    if (op == "sdiv" || op == "udiv") { //TODO: check whether there's need to use also udiv.
+    if (op == "sdiv" || op == "udiv") {
         code << "call void @assertDiv(i32 " << right << ")" << endl;
     }
     code << this->getNextRegisterName() << " = " << op << " i32 " << left << ", " << right;
@@ -89,7 +86,6 @@ string RegisterAllocator::emitCmpCode(string left, string right, string op) {
     stringstream code;
     string reg = this->getNextRegisterName();
     code << reg << " = icmp ";
-    // todo: should we care about signed vs unsigned?
     if (op == "==") {
         code << "eq ";
     } else if (op == "!=") {

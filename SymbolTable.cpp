@@ -123,12 +123,7 @@ void SymbolTable::add(TableNode node, bool is_function) {
         errorDef(yylineno, node.getName());
         exit(-1);
     }
-    if (node.isFunction()) {
-        checkForValidType(node.returnType()); //TODO: fix
-    } else {
-        // cout << "node type is " << node.getType() << endl;
-        checkForValidType(node.returnType()); //TODO: fix
-    }
+    checkForValidType(node.returnType());
     if (is_function) {
         this->symbolsTable->front().push_back(node);
     }

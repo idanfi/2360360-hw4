@@ -85,8 +85,8 @@ Statements: Statement {$$ = $1;}
 ;
 Statement: LBRACE BlockOpen Statements RBRACE {symbolTable.deleteScope(); $$ = $3;}
            | Type ID SC            {symbolTable.addVariable($2->id, $1->type); regAllocator.createRegister($2, "0", INVALID_ID); $$ = $1;}
-           | Type ID ASSIGN Exp SC {symbolTable.addVariable($2->id, $1->type); $4->loadExp(); regAllocator.createRegister($2, $4->value, $4->id); $$ = new AssignOp($2, $4);} //TODO: move createRegiser to end?
-           | ID ASSIGN Exp SC      {symbolTable.assertExists($1->id, false); $3->loadExp(); regAllocator.createRegister($1, $3->value, $3->id); $$ = new AssignOp($1, $3);} //TODO: move createRegiser to end?
+           | Type ID ASSIGN Exp SC {symbolTable.addVariable($2->id, $1->type); $4->loadExp(); regAllocator.createRegister($2, $4->value, $4->id); $$ = new AssignOp($2, $4);}
+           | ID ASSIGN Exp SC      {symbolTable.assertExists($1->id, false); $3->loadExp(); regAllocator.createRegister($1, $3->value, $3->id); $$ = new AssignOp($1, $3);}
            | Call SC               {$$ = $1;}
            | RETURN SC             {isValidReturn(TYPE_VOID, false); $$ = new TypeExp(TYPE_VOID); buffer.emit("ret void");}
            | RETURN Exp SC         {isValidReturn($2->realtype(), true); $2->loadExp(); $2->emitReturnCode(); $$ = $2;}
