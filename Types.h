@@ -21,6 +21,7 @@ using namespace output;
 #define TYPE_ID "id"
 #define TYPE_RELOP "relop"
 #define INVALID_ID "$invalid_id"
+#define INVALID_VALUE "%invalid_value"
 #define TYPE_MARKER "marker"
 
 extern int yylineno;
@@ -56,7 +57,8 @@ public:
         this->is_numeric = false;
         this->is_valid_numeric_value = false;
         this->numeric_value = -1;
-        this->value = "%invalid_value";
+        this->value = INVALID_VALUE;
+        this->boolValue = INVALID_VALUE;
         this->nextInstruction = "-1";
     }
 
@@ -80,6 +82,7 @@ public:
     void emitElseCode();
     void bpatchIf(string falseLabel);
     void loadExp();
+    void calculateBoolExp();
     ~Node() = default;
     string type;
     string id;
@@ -87,6 +90,7 @@ public:
     int64_t numeric_value;
     bool is_valid_numeric_value;
     string value;
+    string boolValue;
     vector<pair<int,BranchLabelIndex>> trueList;
     vector<pair<int,BranchLabelIndex>> falseList;
     vector<pair<int,BranchLabelIndex>> nextList;
@@ -157,6 +161,9 @@ public:
         }
         this->type = left->type;
         this->is_numeric = isNumeric(realtype());
+        if (this->type == TYPE_BOOL) {
+            this->boolValue = right->boolValue;
+        }
 
         delete left;
         delete right;

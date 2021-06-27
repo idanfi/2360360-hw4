@@ -61,7 +61,7 @@ public:
 	// ******** Extra methods that we added *************** //
 	void preprocess();
 	int nextInstruction();
-	string genLabelNextLine();
+	string genLabelNextLine(string comment = "");
 };
 
 #endif
