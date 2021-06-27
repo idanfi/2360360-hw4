@@ -43,6 +43,10 @@ void RegisterAllocator::createRegister(Node *node, string value, string id) {
     }
     node->value = registerName;
     buffer.emit(code.str());
+    if (type == TYPE_BOOL) {
+        node->boolValue = this->getNextRegisterName();
+        buffer.emit(node->boolValue + " = trunc i32 " + registerName + " to i1");
+    }
     this->storeVar(node->id, registerName);
 }
 

@@ -121,8 +121,8 @@ SwitchOpen: /*epsilon*/ {symbolTable.addConditionalStructure("switch"); $$ = new
 SwitchExp: Exp {assertAssignableTypes(TYPE_INT, "dummy", $1->realtype(), "dummy"); $1->loadExp(); $$ = $1; $$->emitSwitchOpen();}
 ;
 
-Call:   ID LPAREN ExpList RPAREN {$$ = new CallOp($1, (ExpList*)$3); $1->emitCallCode($3); $$->value = $1->value;}
-        | ID LPAREN RPAREN {$$ = new CallOp($1, new ExpList()); $1->emitCallCode(nullptr); $$->value = $1->value;}
+Call:   ID LPAREN ExpList RPAREN {$$ = new CallOp($1, (ExpList*)$3); $1->emitCallCode($3); $$->value = $1->value; $$->boolValue = $1->boolValue;}
+        | ID LPAREN RPAREN {$$ = new CallOp($1, new ExpList()); $1->emitCallCode(nullptr); $$->value = $1->value; $$->boolValue = $1->boolValue;}
 ;
 
 ExpList:    Exp {$1->loadExp(); $1->calculateBoolExp(); $$ = new ExpList($1);}
@@ -139,13 +139,13 @@ Exp:    LPAREN Exp RPAREN {$$ = $2;}
         | Exp PLUS Exp {buffer.emit(regAllocator.createArithmeticCode($1, $3, "add")); $$ = new BinaryArithmeticOp($1, $3);$$->value = regAllocator.getCurrentRegisterName();}
         | Exp DEV Exp {buffer.emit(regAllocator.createArithmeticCode($1, $3, "sdiv")); $$ = new BinaryArithmeticOp($1, $3); $$->value = regAllocator.getCurrentRegisterName();}
         | Exp MUL Exp {buffer.emit(regAllocator.createArithmeticCode($1, $3, "mul")); $$ = new BinaryArithmeticOp($1, $3); $$->value = regAllocator.getCurrentRegisterName();}
-        | ID {$$ = $1; symbolTable.assertExists($1->id, false); $$->value = regAllocator.getVarRegister($1->id, $$->value);}
+        | ID {$$ = $1; symbolTable.assertExists($1->id, false); $$->value = regAllocator.getVarRegister($1->id, $$->value); $$->jmpIfBool();}
         | Call {$$ = $1;}
         | NUM {$$ = new NumberExp($1);}
         | NUM B {$$ = new NumberExp($1, true);}
         | STRING {$$ = $1; }
-        | TRUE {$$ = $1; $$->value = "1"; $$->trueList.push_back({buffer.emit("br label @\t; true"), FIRST});}
-        | FALSE {$$ = $1; $$->value = "0"; $$->falseList.push_back({buffer.emit("br label @\t; false"), SECOND});}
+        | TRUE {$$ = $1; $$->boolValue = "1"; $$->trueList.push_back({buffer.emit("br label @\t; true"), FIRST});}
+        | FALSE {$$ = $1; $$->boolValue = "0"; $$->falseList.push_back({buffer.emit("br label @\t; false"), SECOND});}
         | NOT Exp {$$ = new UnaryLogicOp($2);}
         | Exp AND BoolMarkerM Exp {$$ = new BinaryLogicOp($1, $4, true, $3);}
         | Exp OR BoolMarkerM Exp {$$ = new BinaryLogicOp($1, $4, false, $3);}

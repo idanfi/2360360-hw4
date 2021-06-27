@@ -96,20 +96,29 @@ void Node::calculateBoolExp() {
     if (this->type == TYPE_BOOL) {
         // calculate the bool value using it's trueList and falseList
         string reg = regAllocator.getNextRegisterName();
-        string trueLabel = buffer.genLabelNextLine();
-        int trueInstr = buffer.emit("br label @ ; start of calculateBoolExp");
+        string code = "br i1 " + this->boolValue + ", label @, label @; calculateBoolExp";
+        int jmpInstr = buffer.emit(code);
+        string trueLabel = buffer.genLabel();
+        int trueInstr = buffer.emit("br label @");
         string falseLabel = buffer.genLabel();
         int falseInstr = buffer.emit("br label @");
         string phiLabel = buffer.genLabel();
-        int phiInstr = buffer.emit(reg + " = phi i32 [1, 0], [@ , @]");
+        int phiInstr = buffer.emit(reg + " = phi i32 [1, @], [0, @]");
         this->boolValue = regAllocator.getNextRegisterName();
         buffer.emit(this->boolValue + " = trunc i32 " + reg + " to i1\t; boolValue");
 
         // now backpatch everything, including the exp trueList and falseList
         vector<pair<int,BranchLabelIndex>> v1 = {{falseInstr, SECOND}};
         vector<pair<int,BranchLabelIndex>> v2 = {{trueInstr, FIRST}};
-        this->trueList.push_back({phiInstr, FIRST});
         this->falseList.push_back({phiInstr, SECOND});
+        this->trueList.push_back({phiInstr, FIRST});
+        if ((this->notCounter % 2) == 0) {
+            this->falseList.push_back({jmpInstr, SECOND});
+            this->trueList.push_back({jmpInstr, FIRST});
+        } else {
+            this->falseList.push_back({jmpInstr, FIRST});
+            this->trueList.push_back({jmpInstr, SECOND});
+        }
         buffer.bpatch(this->falseList, falseLabel);
         buffer.bpatch(this->trueList, trueLabel);
         buffer.bpatch(v1, phiLabel);
@@ -117,6 +126,17 @@ void Node::calculateBoolExp() {
 
         // update nodes value. On type bool it is a i1 type.
         this->value = reg;
+    }
+}
+
+void Node::jmpIfBool() {
+    // if the id is actually a bool, just jmp
+    if (this->realtype() == TYPE_BOOL && this->type == TYPE_ID) {
+        this->boolValue = regAllocator.getNextRegisterName();
+        buffer.emit(this->boolValue + " = trunc i32 " + this->value + " to i1\t; jmpIfBool");
+        int jmpInst = buffer.emit("br i1 " + this->boolValue + ", label @, label @");
+        this->trueList.push_back({jmpInst, FIRST});
+        this->falseList.push_back({jmpInst, SECOND});
     }
 }
 
@@ -242,6 +262,10 @@ void Node::emitCallCode(Node* node) {
     code << "call " << llvmType << " @" << this->id;
     createLlvmArguments(size, code, expressions);
     buffer.emit(code.str());
+    if (retType == TYPE_BOOL) {
+        this->boolValue = regAllocator.getNextRegisterName();
+        buffer.emit(this->boolValue + " = trunc i32 " + this->value + " to i1\t; emitCallCode");
+    }
     //cout << "finish emitCallCode - " << code.str() << endl;
 }
 
@@ -292,34 +316,28 @@ BinaryLogicOp::BinaryLogicOp(Node *left, Node *right, bool isAnd, Node *marker) 
     if (isAnd) {
         //buffer.emit("AND");
         string rightLabel = buffer.genLabelNextLine(": isAnd");
-        buffer.bpatch(marker->nextList, rightLabel);
-        buffer.bpatch(left->falseList, rightLabel);
+        buffer.bpatch(left->trueList, marker->nextInstruction);
         this->trueList = right->trueList;
         this->falseList = buffer.merge(left->falseList, right->falseList);
         // check for short circuit evaluation
         left->loadExp();
-        int brInstr = buffer.emit("br i1 " + left->boolValue + " label @, label @");
+        int brInstr = buffer.emit("br i1 " + left->boolValue + ", label @, label @");
+        this->trueList.push_back({brInstr, FIRST});
         this->falseList.push_back({brInstr, SECOND});
-        // in case it's true, compute the right side
-        string trueLabel = buffer.genLabel();
-        vector<pair<int,BranchLabelIndex>> v1 = {{brInstr, FIRST}};
-        buffer.bpatch(v1, marker->nextInstruction);
-        right->loadExp();
+        this->falseList = buffer.merge(this->falseList, marker->nextList);
         this->boolValue = "1";
     } else { // or op
         //buffer.emit("OR");
         string rightLabel = buffer.genLabelNextLine(": isOr");
-        buffer.bpatch(marker->nextList, rightLabel);
-        buffer.bpatch(left->falseList, rightLabel);
+        buffer.bpatch(left->falseList, marker->nextInstruction);
         this->trueList = buffer.merge(left->trueList, right->trueList);
         this->falseList = right->falseList;
         // check for short circuit evaluation
         left->loadExp();
-        int brInstr = buffer.emit("br i1 " + left->boolValue + " label @, label @");
+        int brInstr = buffer.emit("br i1 " + left->boolValue + ", label @, label @");
         this->trueList.push_back({brInstr, FIRST});
-        // in case it's false, compute the right side
-        vector<pair<int,BranchLabelIndex>> v1 = {{brInstr, SECOND}};
-        buffer.bpatch(v1, marker->nextInstruction);
+        this->falseList.push_back({brInstr, SECOND});
+        this->trueList = buffer.merge(this->trueList, marker->nextList);
         this->boolValue = "0";
     }
     delete left;
@@ -336,10 +354,11 @@ RelOp::RelOp(Node *left, Node *right, string op) {
         errorMismatch(yylineno);
         exit(-1);
     }
+    this->nextInstruction = buffer.genLabelNextLine();
     left->loadExp();
     right->loadExp();
     this->boolValue = regAllocator.emitCmpCode(left->value, right->value, op);
-    int brInstr = buffer.emit("br i1 " + this->boolValue + " label @, label @\t; relOp");
+    int brInstr = buffer.emit("br i1 " + this->boolValue + ", label @, label @\t; relOp");
     this->trueList.push_back({brInstr, FIRST});
     this->falseList.push_back({brInstr, SECOND});
     delete left;
@@ -381,9 +400,9 @@ StringExp::StringExp(string _str) {
 }
 
 UnaryLogicOp::UnaryLogicOp(Node *exp) {
-    //exp->loadExp();
+    exp->loadExp();
     string type = exp->realtype();
-        if (type == TYPE_BOOL) {
+    if (type == TYPE_BOOL) {
         this->type = TYPE_BOOL;
         this->is_numeric = false;
     } else {
@@ -393,7 +412,13 @@ UnaryLogicOp::UnaryLogicOp(Node *exp) {
     }
     //this->value = regAllocator.getNextRegisterName();
     //buffer.emit(this->value + " = sub i32 1, " + exp->value);
-    this->trueList = exp->falseList;
-    this->falseList = exp->trueList;
+    if (exp->boolValue == "0") {
+        this->boolValue = "1";
+    } else if (this->boolValue == "1") {
+        exp->boolValue = "0";
+    } else {
+        this->boolValue = exp->boolValue;
+    }
+    this->notCounter = (exp->notCounter + 1);
     delete exp;
 }

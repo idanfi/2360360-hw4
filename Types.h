@@ -60,6 +60,7 @@ public:
         this->value = INVALID_VALUE;
         this->boolValue = INVALID_VALUE;
         this->nextInstruction = "-1";
+        this->notCounter = 0;
     }
 
     Node(string type, string id) : Node() {
@@ -83,6 +84,7 @@ public:
     void bpatchIf(string falseLabel);
     void loadExp();
     void calculateBoolExp();
+    void jmpIfBool();
     ~Node() = default;
     string type;
     string id;
@@ -96,6 +98,7 @@ public:
     vector<pair<int,BranchLabelIndex>> nextList;
     vector<pair<int,BranchLabelIndex>> startLoopList;
     string nextInstruction;
+    int notCounter;
 };
 
 // all relationship operators - "<", ">", "==" etc.
@@ -345,12 +348,12 @@ public:
         this->type = TYPE_MARKER;
         if (isMarkerM) {
             //this->nextInstruction = buffer.genLabelNextLine();
-            int jmpInstr = buffer.emit("br label @");
+            int jmpInstr = buffer.emit("br label @\t; MarkerM");
             this->nextInstruction = buffer.genLabel();
             this->nextList.push_back({jmpInstr, FIRST});
         } else {
             this->nextList.push_back({buffer.nextInstruction(), FIRST});
-            buffer.emit("br label @");
+            buffer.emit("br label @\t; MarkerN");
         }
     }
     ~Marker() = default;
